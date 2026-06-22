@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HSK Practice Platform Preview</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7fbf9;
+        --text: #111827;
+        --muted: #5f6b75;
+        --line: #d9eee4;
+        --soft: #ecfdf5;
+        --primary: #059669;
+        --primary-dark: #047857;
+        --sky: #e0f2fe;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      button,
+      select,
+      textarea,
+      input {
+        font: inherit;
+      }
+
+      header {
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .wrap {
+        width: min(1240px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 0;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: var(--primary-dark);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0;
+        font-size: 28px;
+      }
+
+      select,
+      input,
+      textarea {
+        border: 1px solid #c9d7d0;
+        border-radius: 6px;
+        background: #fff;
+        padding: 10px 12px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 20px;
+        padding: 22px 0;
+      }
+
+      .panel,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .sidebar {
+        display: grid;
+        gap: 16px;
+        align-content: start;
+      }
+
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .level,
+      .skill,
+      .tab,
+      .option,
+      .btn {
+        cursor: pointer;
+        border: 1px solid #d8e1dc;
+        border-radius: 6px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .level,
+      .skill,
+      .option {
+        width: 100%;
+        padding: 12px;
+        text-align: left;
+      }
+
+      .active {
+        border-color: var(--primary);
+        background: var(--soft);
+      }
+
+      .tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+      }
+
+      .tab,
+      .btn {
+        padding: 10px 14px;
+        font-weight: 700;
+      }
+
+      .tab.active,
+      .btn.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .content {
+        display: grid;
+        gap: 18px;
+      }
+
+      .stats,
+      .modules,
+      .practice-layout,
+      .test-layout,
+      .repo-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .modules {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .practice-layout,
+      .test-layout {
+        grid-template-columns: 1fr 360px;
+      }
+
+      .repo-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .tag {
+        display: inline-flex;
+        border-radius: 6px;
+        background: var(--sky);
+        color: #075985;
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .progress {
+        overflow: hidden;
+        height: 8px;
+        border-radius: 999px;
+        background: #edf2f0;
+      }
+
+      .bar {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary);
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 220px;
+        line-height: 1.7;
+        resize: vertical;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 940px) {
+        .layout,
+        .practice-layout,
+        .test-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .stats,
+        .modules,
+        .repo-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .topbar,
+        .stats,
+        .modules,
+        .repo-grid {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap topbar">
+        <div>
+          <p class="eyebrow">HSK Practice Platform</p>
+          <h1>Không gian luyện thi HSK đa ngôn ngữ</h1>
+        </div>
+        <label>
+          Giao diện
+          <select id="locale">
+            <option>Tiếng Việt</option>
+            <option>English</option>
+            <option>简体中文</option>
+            <option>日本語</option>
+            <option>한국어</option>
+            <option>ภาษาไทย</option>
+            <option>Русский</option>
+            <option>español</option>
+            <option>Français</option>
+            <option>Bahasa Indonesia</option>
+            <option>German</option>
+            <option>Português</option>
+            <option>Italian</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <div class="wrap layout">
+      <aside class="sidebar">
+        <section class="panel">
+          <p class="eyebrow">Cấp độ</p>
+          <div class="grid2" id="levels"></div>
+        </section>
+        <section class="panel">
+          <p class="eyebrow">Kỹ năng</p>
+          <div id="skills"></div>
+        </section>
+      </aside>
+
+      <main class="content">
+        <nav class="panel tabs" id="tabs"></nav>
+        <section id="view"></section>
+      </main>
+    </div>
+
+    <script>
+      const levels = [
+        { id: 1, words: 150, readiness: 32, sections: ["True or false", "Match sentences with pictures", "Choose the right answer"] },
+        { id: 2, words: 300, readiness: 21, sections: ["True or false", "Dialogue questions", "Fill in the gap"] },
+        { id: 3, words: 600, readiness: 14, sections: ["Choose pictures", "Reading comprehension", "Arrange sentence order"] },
+        { id: 4, words: 1200, readiness: 9, sections: ["Dialogue questions", "Arrange sentence order", "Picture sentence writing"] },
+        { id: 5, words: 2500, readiness: 6, sections: ["Passage questions", "Reading comprehension", "Keyword essay"] },
+        { id: 6, words: 5000, readiness: 4, sections: ["Interview questions", "Find incorrect sentence", "Abbreviated article essay"] },
+      ];
+
+      const skills = ["Listening", "Reading", "Writing", "Mock tests"];
+      const tabs = ["Dashboard", "Practice", "Mock test", "Writing", "My exercise", "System plan"];
+      const modules = [
+        ["AI diagnostic", "Estimate level, weak skills, target score, and exam date plan.", "12 min"],
+        ["Smart quiz", "Adaptive mixed drill using wrong answers and low confidence items.", "5-20 questions"],
+        ["Mock test", "Timed HSK simulation with autosave, review, score report.", "HSK 1-6"],
+        ["Vocabulary SRS", "Daily cards, pinyin, audio, example sentences, mastery state.", "150-5000 words"],
+        ["Writing correction", "Essay editor, AI feedback, teacher correction credits.", "HSK 3-6"],
+        ["My exercise", "Wrong questions, saved problems, notes, essays, due reviews.", "Personal"],
+      ];
+
+      let activeLevel = 1;
+      let activeSkill = "Listening";
+      let activeTab = "Dashboard";
+      let picked = "";
+
+      function renderControls() {
+        document.getElementById("levels").innerHTML = levels
+          .map((level) => `<button class="level ${level.id === activeLevel ? "active" : ""}" onclick="activeLevel=${level.id}; render()"><b>HSK ${level.id}</b><br><span class="muted">${level.words} words</span></button>`)
+          .join("");
+        document.getElementById("skills").innerHTML = skills
+          .map((skill) => `<button class="skill ${skill === activeSkill ? "active" : ""}" onclick="activeSkill='${skill}'; activeTab='${skill === "Mock tests" ? "Mock test" : skill === "Writing" ? "Writing" : "Practice"}'; render()"><b>${skill}</b><br><span class="muted">Practice, progress, reports</span></button>`)
+          .join("");
+        document.getElementById("tabs").innerHTML = tabs
+          .map((tab) => `<button class="tab ${tab === activeTab ? "active" : ""}" onclick="activeTab='${tab}'; render()">${tab}</button>`)
+          .join("");
+      }
+
+      function renderDashboard(level) {
+        return `
+          <div class="stats">
+            ${[
+              ["Target", `HSK ${level.id}`],
+              ["Readiness", `${level.readiness}%`],
+              ["Accuracy", "76%"],
+              ["Streak", "0 days"],
+            ].map(([label, value]) => `<article class="card"><p class="muted">${label}</p><h2>${value}</h2><p class="muted">Connected after auth/backend.</p></article>`).join("")}
+          </div>
+          <section class="panel">
+            <h2>Today's study plan</h2>
+            <p class="muted">Bản đầu giữ mô hình practice/test/writing/my-exercise, nâng cấp bằng SRS, AI feedback, accessibility và đa ngôn ngữ ngay từ đầu.</p>
+            <div class="modules">
+              ${modules.map(([title, body, metric]) => `<article class="card"><span class="tag">${metric}</span><h3>${title}</h3><p class="muted">${body}</p></article>`).join("")}
+            </div>
+          </section>`;
+      }
+
+      function renderPractice(level) {
+        return `
+          <div class="practice-layout">
+            <section class="panel">
+              <h2>HSK ${level.id} - ${activeSkill}</h2>
+              <p class="muted">Section map with progress, correct/answered, gated state, single training and smart quiz.</p>
+              ${level.sections.map((section, idx) => `
+                <article class="card">
+                  <h3>Section ${idx + 1} <span class="tag">${idx > 1 ? "VIP gated" : "Open"}</span></h3>
+                  <p class="muted">${section}</p>
+                  <div class="progress"><div class="bar" style="width:${idx === 0 ? 24 : 0}%"></div></div>
+                </article>`).join("")}
+            </section>
+            <aside class="panel">
+              <p class="eyebrow">Sample renderer</p>
+              <h2>Listening / True or false</h2>
+              <p class="muted">Listen to the audio and decide whether the statement is correct.</p>
+              ${["True", "False"].map((option) => `<button class="option ${picked === option ? "active" : ""}" onclick="picked='${option}'; render()">${option}</button>`).join("")}
+              <button class="btn primary" style="margin-top:12px" onclick="picked = picked || 'True'; render()">Check answer analysis</button>
+              ${picked ? `<div class="card" style="margin-top:12px;background:var(--soft)"><b>Correct answer: True</b><p class="muted">Show transcript, translation, grammar point, and why each option is right or wrong.</p></div>` : ""}
+            </aside>
+          </div>`;
+      }
+
+      function renderTest() {
+        return `
+          <div class="test-layout">
+            <section class="panel">
+              <h2>Mock exam console</h2>
+              <p class="muted">Timed sections, autosave, unanswered review, score report, and generated drills after submit.</p>
+              <div class="modules">
+                ${["Real-style mock set 1", "Real-style mock set 2", "Past exam pack", "Adaptive mini mock"].map((name, idx) => `<article class="card"><span class="tag">${idx === 0 ? "Open" : "VIP"}</span><h3>${name}</h3><p class="muted">Exam mode with review state machine.</p><button class="btn primary">Start test</button></article>`).join("")}
+              </div>
+            </section>
+            <aside class="panel"><h3>State machine</h3><p class="muted">not_started -> in_progress -> autosaved -> submitted -> scored -> review -> drill_generated</p></aside>
+          </div>`;
+      }
+
+      function renderWriting() {
+        return `
+          <div class="test-layout">
+            <section class="panel">
+              <h2>Writing workspace</h2>
+              <p class="muted">Editor for HSK 3-6 writing, AI correction and teacher correction credits.</p>
+              <input style="width:100%;margin-bottom:12px" placeholder="Essay title" />
+              <textarea id="essay" placeholder="Write your Chinese answer here..."></textarea>
+              <button class="btn primary">Get AI feedback</button>
+            </section>
+            <aside class="panel"><h3>Rubric</h3><p class="muted">Task completion, grammar, vocabulary, cohesion, character accuracy, exam timing.</p></aside>
+          </div>`;
+      }
+
+      function renderRepository() {
+        return `<section class="panel"><h2>My exercise repository</h2><div class="repo-grid">${[
+          ["Wrong questions", 18], ["Problem collection", 11], ["My note", 7], ["Essay tutoring", 3], ["Due reviews", 24],
+        ].map(([name, count]) => `<article class="card"><h2>${count}</h2><h3>${name}</h3><p class="muted">Filter by skill, source, section, difficulty, confidence, due date.</p></article>`).join("")}</div></section>`;
+      }
+
+      function renderSystem() {
+        return `<section class="panel"><h2>System plan</h2>${[
+          "Web learning dashboard and practice renderer.",
+          "Auth, profile, goals, and subscription entitlements.",
+          "CMS for original/licensed question bank and translations.",
+          "Attempts, scoring, reports, and adaptive mistake review.",
+          "AI writing/speaking correction and diagnostic planning.",
+          "Mobile apps, offline packs, and B2B dashboards.",
+        ].map((item, index) => `<article class="card"><b>${index + 1}. ${item}</b></article>`).join("")}</section>`;
+      }
+
+      function render() {
+        const level = levels.find((item) => item.id === activeLevel);
+        renderControls();
+        const view = document.getElementById("view");
+        if (activeTab === "Dashboard") view.innerHTML = renderDashboard(level);
+        if (activeTab === "Practice") view.innerHTML = renderPractice(level);
+        if (activeTab === "Mock test") view.innerHTML = renderTest();
+        if (activeTab === "Writing") view.innerHTML = renderWriting();
+        if (activeTab === "My exercise") view.innerHTML = renderRepository();
+        if (activeTab === "System plan") view.innerHTML = renderSystem();
+      }
+
+      render();
+    </script>
+  </body>
+</html>
