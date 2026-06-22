@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="HSK Mastery">
+  <rect width="512" height="512" rx="112" fill="#b4234c"/>
+  <circle cx="378" cy="130" r="54" fill="#ffd8e3"/>
+  <path fill="#fff" d="M135 132h242v52H279v66h84v51h-84v79h-58v-79h-86v-51h86v-66h-86z"/>
+  <path fill="#ffd8e3" d="M120 404c55-23 103-34 145-34 44 0 87 11 129 34v36c-49-21-94-31-135-31-42 0-88 10-139 31z"/>
+</svg>

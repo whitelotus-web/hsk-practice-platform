@@ -11,6 +11,8 @@ experience.
 - `src/`: Next.js implementation scaffold for the long-term app.
 - `docs/supertest-audit.md`: observed product model and upgrade notes.
 - `docs/implementation-plan.md`: phased implementation plan.
+- Mobile status: PWA v1 is implemented in `static-app`; native iOS/Android is
+  planned after backend/API stabilization.
 
 ## Language Direction
 
@@ -64,6 +66,8 @@ http://localhost:4173
   reviews.
 - About Test, Test Plan and Test Regulation modules.
 - Download App page with original app feature model and store-link TODOs.
+- PWA/mobile-ready shell: manifest, app icon, install prompt, service worker,
+  offline fallback, and app-download status panel.
 - Auth screens: login, register, password reset and QR-auth placeholder.
 - Account center: profile, messages, member card, coupons, feedback, password
   and delete-account panels.
@@ -77,6 +81,19 @@ http://localhost:4173
   with status export/import for later backend migration.
 - System implementation map and super-admin operating roles.
 - Local persistence with `localStorage`.
+
+## Mobile / PWA
+
+The current mobile implementation is a Progressive Web App:
+
+- `static-app/manifest.webmanifest`
+- `static-app/sw.js`
+- `static-app/offline.html`
+- `static-app/icons/`
+
+Open `http://localhost:4173` on a supported mobile browser or deploy over HTTPS,
+then choose Install/Add to Home Screen. Native iOS/Android apps should be built
+after auth, content APIs, offline packs, and payment flows are stable.
 
 ## Next Implementation Steps
 

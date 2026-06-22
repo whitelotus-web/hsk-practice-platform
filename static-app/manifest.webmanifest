@@ -1,0 +1,42 @@
+{
+  "name": "HSK Mastery",
+  "short_name": "HSK Mastery",
+  "description": "Luyện thi HSK 1-9, thi thử, ôn từ vựng, luyện dịch/nói và quản trị học tập.",
+  "lang": "vi",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff8fb",
+  "theme_color": "#b4234c",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Luyện tập",
+      "short_name": "Luyện",
+      "description": "Mở khu luyện tập HSK",
+      "url": "./index.html#practice"
+    },
+    {
+      "name": "Thi thử",
+      "short_name": "Thi",
+      "description": "Mở phòng thi thử",
+      "url": "./index.html#mock"
+    },
+    {
+      "name": "Quản trị nội dung",
+      "short_name": "Nội dung",
+      "description": "Mở Content Admin",
+      "url": "./index.html#content"
+    }
+  ]
+}

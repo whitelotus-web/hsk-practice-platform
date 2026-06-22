@@ -23,6 +23,8 @@ Goal: prove the full learning loop on web.
   template, mock set import, and validation warnings.
 - Local approval workflow for learning content: draft, review, approved,
   published.
+- PWA/mobile-ready web app: manifest, install prompt, service worker, offline
+  fallback and app status panel.
 
 ## Phase 2: Backend
 
@@ -62,6 +64,7 @@ Goal: prove the full learning loop on web.
 
 ## Phase 4: Mobile Apps
 
+- Use the current PWA as the mobile validation layer before native builds.
 - React Native or Flutter app.
 - Offline practice packs.
 - Push reminders.

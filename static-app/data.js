@@ -913,6 +913,7 @@ window.HSK_DATA = {
       ["Lộ trình cá nhân", "Tạo việc học hằng ngày theo mục tiêu, ngày thi, lịch sử câu sai và lịch ôn."],
       ["Luyện tập tối ưu", "Ưu tiên dạng câu ảnh hưởng nhiều nhất tới điểm mục tiêu."],
       ["Ôn ngoại tuyến", "Xếp hàng từ vựng và giải thích đã lưu để ôn trên điện thoại."],
+      ["Cài dạng PWA", "Có manifest, icon, cache nền và trang offline để thử nghiệm mobile trước khi phát hành native app."],
       ["HSK 7-9 nâng cao", "Bộ luyện Nghe, Đọc, Viết, Dịch, Nói theo bài Advanced 210 phút."],
       ["Hỗ trợ giáo viên", "Chuyển yêu cầu sửa bài, dịch, nói và gia sư vào quy trình giáo viên."],
     ],

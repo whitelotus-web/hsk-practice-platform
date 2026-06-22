@@ -23,6 +23,10 @@
     recordingStatus: "idle",
     contentWorkflow: saved.contentWorkflow || {},
     contentStatusFilter: saved.contentStatusFilter || "all",
+    pwaInstallPrompt: null,
+    pwaMessage: "",
+    isStandalone: window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true,
+    isOnline: navigator.onLine,
     customContent: {
       practiceQuestions: saved.customContent?.practiceQuestions || [],
       vocab: saved.customContent?.vocab || [],
@@ -51,6 +55,40 @@
   let speechStream = null;
   let speechChunks = [];
   let recordedAudioUrl = "";
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    state.pwaInstallPrompt = event;
+    state.pwaMessage = "Ứng dụng đã sẵn sàng để cài lên thiết bị.";
+    render();
+  });
+
+  window.addEventListener("online", () => {
+    state.isOnline = true;
+    state.pwaMessage = "Đã kết nối lại. Nội dung mới có thể đồng bộ.";
+    render();
+  });
+
+  window.addEventListener("offline", () => {
+    state.isOnline = false;
+    state.pwaMessage = "Đang ngoại tuyến. Các màn hình đã cache vẫn có thể mở lại.";
+    render();
+  });
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./sw.js")
+        .then(() => {
+          state.pwaMessage = state.pwaMessage || "Đã bật cache nền cho trải nghiệm mobile/PWA.";
+          render();
+        })
+        .catch((error) => {
+          state.pwaMessage = `Không đăng ký được PWA cache: ${error.message}`;
+          render();
+        });
+    });
+  }
 
   mergeCustomContent();
 
@@ -1183,6 +1221,12 @@
   }
 
   function renderAppDownload() {
+    const pwaCards = [
+      ["Cài nhanh dạng PWA", state.isStandalone ? "Đã chạy như app" : state.pwaInstallPrompt ? "Sẵn sàng cài" : "Mở bằng Chrome/Edge/Safari rồi chọn Add to Home Screen"],
+      ["Offline shell", "Cache app shell, trang offline, dữ liệu seed và giao diện học."],
+      ["Native app phase sau", "React Native/Flutter sẽ dùng lại API, CMS, đề, rubric và tài khoản."],
+      ["Khác biệt với đối thủ", "Ưu tiên HSK 7-9, luyện dịch/nói, workflow giáo viên và dashboard nội dung."],
+    ];
     return `
       <section class="download-hero">
         <div>
@@ -1190,17 +1234,36 @@
           <h1>Ứng dụng ${escapeHtml(data.brand.appName)}</h1>
           <p class="muted">${escapeHtml(data.appDownload.tagline)}</p>
           <div class="hero-actions">
+            <button class="btn primary" data-action="install-pwa">${state.isStandalone ? "Đã cài dạng app" : "Cài bản web app"}</button>
             ${data.appDownload.stores
-              .map(([name, url]) => `<button class="btn primary" data-action="app-store">${escapeHtml(name)}</button><span class="muted">${escapeHtml(url)}</span>`)
+              .map(([name, url]) => `<button class="btn ghost" data-action="app-store">${escapeHtml(name)}</button><span class="muted">${escapeHtml(url)}</span>`)
               .join("")}
           </div>
+          <div class="tag-row">
+            <span class="tag ${state.isOnline ? "ok" : "vip"}">${state.isOnline ? "Online" : "Offline"}</span>
+            <span class="tag ${state.isStandalone ? "ok" : ""}">${state.isStandalone ? "Standalone app" : "Browser/PWA ready"}</span>
+          </div>
+          ${state.pwaMessage ? `<article class="card feedback"><p class="muted">${escapeHtml(state.pwaMessage)}</p></article>` : ""}
         </div>
         <div class="phone-preview">
           <div class="phone-notch"></div>
           <h3>Hôm nay</h3>
           <p class="muted">Lộ trình HSK ${state.level}</p>
           ${progressBar(level().readiness)}
-          <div class="mini-options"><button>Nghe</button><button>Đọc</button><button>Viết</button><button>Thi</button></div>
+          <div class="mini-options"><button>Nghe</button><button>Đọc</button><button>Dịch</button><button>Nói</button></div>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="split">
+          <div>
+            <p class="eyebrow">Mobile readiness</p>
+            <h2>Bản mobile hiện tại: PWA cài được, native app ở phase sau</h2>
+            <p class="muted">PWA giúp thử nghiệm trên điện thoại ngay: có manifest, icon, cache nền và trang offline. Khi backend ổn định, native iOS/Android sẽ dùng lại cùng dữ liệu, tài khoản, đề thi và workflow giáo viên.</p>
+          </div>
+          <span class="tag ok">PWA v1</span>
+        </div>
+        <div class="grid module-grid">
+          ${pwaCards.map(([name, desc]) => `<article class="card"><h3>${escapeHtml(name)}</h3><p class="muted">${escapeHtml(desc)}</p></article>`).join("")}
         </div>
       </section>
       <section class="panel">
@@ -2018,6 +2081,20 @@
     if (action === "close-profile") state.profileOpen = false;
     if (action === "auth-submit") state.authMessage = "Luồng tài khoản đã được ghi nhận cục bộ. Khi nối backend sẽ cấu hình email/SMS/QR.";
     if (action === "app-store") state.contentMessage = "Link kho ứng dụng đang là TODO. Cần phát hành app gốc trước khi bật nút này.";
+    if (action === "install-pwa") {
+      if (state.isStandalone) {
+        state.pwaMessage = "Ứng dụng đang chạy ở chế độ app độc lập.";
+      } else if (state.pwaInstallPrompt) {
+        state.pwaInstallPrompt.prompt();
+        state.pwaInstallPrompt.userChoice.then((choice) => {
+          state.pwaMessage = choice.outcome === "accepted" ? "Đã bắt đầu cài web app." : "Bạn đã bỏ qua cài đặt web app.";
+          state.pwaInstallPrompt = null;
+          render();
+        });
+      } else {
+        state.pwaMessage = "Nếu chưa thấy prompt, hãy dùng menu trình duyệt: Add to Home Screen / Install app.";
+      }
+    }
     if (action === "book-tutoring") state.tutoringMessage = "Đã ghi nhận yêu cầu học thử. Bản production cần phân giáo viên, khung giờ, tín chỉ và thông báo.";
     if (action === "check-answer") state.analysisOpen = true;
     if (action === "smart-quiz") {
