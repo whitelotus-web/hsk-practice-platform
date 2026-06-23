@@ -1,5 +1,13 @@
 # Huong dan trien khai
 
+## Domain dang online hien tai
+
+Ban web da duoc deploy bang GitHub Pages:
+
+```text
+https://whitelotus-web.github.io/hsk-practice-platform/
+```
+
 ## Lua chon hosting hien tai
 
 Dung GitHub Pages cho ban web hien tai.
@@ -12,6 +20,43 @@ Dung GitHub Pages cho ban web hien tai.
 ```text
 https://whitelotus-web.github.io/hsk-practice-platform/
 ```
+
+## Host chinh khuyen nghi
+
+Khi can dung nhu mot website/PWA that su trong giai doan dau, nen chuyen host
+chinh sang Cloudflare Pages va giu GitHub lam nguon code.
+
+Ly do:
+
+- Co domain mien phi dang `*.pages.dev`.
+- Tu dong deploy moi khi push len GitHub.
+- Co preview deployment de test nhanh tung thay doi.
+- Gan custom domain sau nay gon.
+- De mo rong sang Cloudflare Workers/API khi can tinh nang backend nhe.
+
+Cau hinh Cloudflare Pages:
+
+```text
+Project name: hsk-practice-platform
+Production branch: main
+Build command: de trong
+Build output directory: static-app
+```
+
+Repo da co `wrangler.toml` de sau nay deploy bang Wrangler/Cloudflare CLI neu
+can.
+
+## Netlify neu muon thay the
+
+Netlify cung phu hop cho static/PWA va de dung. Cau hinh:
+
+```text
+Build command: de trong
+Publish directory: static-app
+```
+
+Repo da co `netlify.toml`, nen khi import vao Netlify, Netlify co the tu doc
+publish folder.
 
 ## Cau hinh GitHub Pages lan dau
 
