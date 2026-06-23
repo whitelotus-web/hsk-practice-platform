@@ -41,6 +41,44 @@ Open:
 http://localhost:4173
 ```
 
+## Free Web Hosting
+
+The current web app is configured for GitHub Pages through GitHub Actions.
+
+- Deploy workflow: `.github/workflows/pages.yml`
+- Published folder: `static-app/`
+- Expected URL after Pages is enabled:
+
+```text
+https://whitelotus-web.github.io/hsk-practice-platform/
+```
+
+Vietnamese operating summary:
+
+- Website hien tai uu tien web truoc mobile native.
+- GitHub la nguon dong bo code chinh.
+- GitHub Pages la hosting mien phi de dung thu web that tren internet.
+- Moi lan `git push origin main`, GitHub Actions se tu deploy lai ban moi.
+- Khi can dang nhap/database/thanh toan that, them backend rieng thay vi nhet
+  secret vao static app.
+
+First-time setup on GitHub:
+
+1. Open `Settings` -> `Pages`.
+2. Set `Build and deployment` -> `Source` to `GitHub Actions`.
+3. Push to `main` and wait for the Pages workflow in the `Actions` tab.
+
+Normal update flow:
+
+```powershell
+git add .
+git commit -m "Describe the update"
+git push origin main
+```
+
+See [docs/deployment.md](docs/deployment.md) for the full deployment and update
+process.
+
 ## Implemented In Prototype
 
 - Vietnamese-first UI; other locales remain translation backlog/admin data.
