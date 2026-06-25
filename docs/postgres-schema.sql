@@ -8,6 +8,7 @@ create table users (
   display_name text not null,
   avatar_url text,
   locale text not null default 'vi',
+  role text not null default 'learner',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -69,6 +70,7 @@ create table sections (
 create table questions (
   id uuid primary key default gen_random_uuid(),
   section_id uuid not null references sections(id) on delete cascade,
+  external_id text unique,
   source_type text not null default 'original',
   difficulty int not null default 1,
   prompt text not null,
@@ -290,3 +292,44 @@ create table organization_members (
   role text not null,
   primary key (organization_id, user_id)
 );
+
+create index idx_users_email_lower on users (lower(email));
+create index idx_users_role on users (role);
+create index idx_questions_external_id on questions (external_id);
+create index idx_questions_status on questions (status);
+create index idx_attempts_user_started on attempts (user_id, started_at desc);
+create index idx_repository_user_due on learner_repository_items (user_id, due_at);
+create index idx_vocab_reviews_user_due on vocab_reviews (user_id, due_at);
+
+insert into locales (code, name, enabled) values
+  ('vi', 'Tiếng Việt', true),
+  ('en', 'English', true),
+  ('zh', '简体中文', true)
+on conflict (code) do nothing;
+
+insert into skills (key, sort_order) values
+  ('listening', 1),
+  ('reading', 2),
+  ('writing', 3),
+  ('translation', 4),
+  ('speaking', 5)
+on conflict (key) do nothing;
+
+insert into hsk_levels (level_no, framework, band, target_words, sort_order) values
+  (1, 'HSK 2.0', 'standard', 150, 1),
+  (2, 'HSK 2.0', 'standard', 300, 2),
+  (3, 'HSK 2.0', 'standard', 600, 3),
+  (4, 'HSK 2.0', 'standard', 1200, 4),
+  (5, 'HSK 2.0', 'standard', 2500, 5),
+  (6, 'HSK 2.0', 'standard', 5000, 6),
+  (7, 'HSK 3.0', 'advanced', 5636, 7),
+  (8, 'HSK 3.0', 'advanced', 11092, 8),
+  (9, 'HSK 3.0', 'advanced', 11092, 9)
+on conflict (framework, level_no) do nothing;
+
+insert into subscription_plans (key, name, price_cents, interval, features) values
+  ('free', 'Free', 0, null, '["starter-practice", "starter-vocab"]'::jsonb),
+  ('vip', 'VIP', null, 'month', '["full-practice", "mock-tests", "srs"]'::jsonb),
+  ('max', 'MAX', null, 'month', '["ai-feedback", "teacher-review", "advanced-hsk-789"]'::jsonb),
+  ('organization', 'Organization', null, 'month', '["class-dashboard", "teacher-tools", "bulk-licenses"]'::jsonb)
+on conflict (key) do nothing;

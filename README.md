@@ -8,9 +8,12 @@ experience.
 ## Current Status
 
 - `static-app/`: runnable prototype with no package dependency.
-- `src/`: Next.js implementation scaffold for the long-term app.
+- `src/`: Next.js app plus the first backend API layer for auth, profile,
+  content, attempts and admin question import.
 - `docs/supertest-audit.md`: observed product model and upgrade notes.
 - `docs/implementation-plan.md`: phased implementation plan.
+- `docs/backend.md`: backend setup, environment variables, API surface and
+  super-admin notes.
 - Mobile status: PWA v1 is implemented in `static-app`; native iOS/Android is
   planned after backend/API stabilization.
 
@@ -52,6 +55,18 @@ npm run check:static
 This validates JavaScript syntax, PWA asset references, Vietnamese-first locale
 settings, HSK 1-9 coverage, the HSK 7-9 Advanced model, mock-test references,
 vocabulary coverage, and the protected-content boundary.
+
+For the Next.js/backend app, run:
+
+```powershell
+npm run lint
+npm run typecheck
+npm run build
+```
+
+The backend requires `DATABASE_URL` and `AUTH_SECRET` for write APIs. Read-only
+content APIs can fall back to the static seed data while the database is not yet
+configured.
 
 ## Free Web Hosting
 
@@ -131,6 +146,20 @@ process.
   with status export/import for later backend migration.
 - System implementation map and super-admin operating roles.
 - Local persistence with `localStorage`.
+
+## Backend API
+
+Implemented in `src/app/api`:
+
+- Auth/session: register, login, logout.
+- Learner profile: read/update current user profile.
+- Content read APIs: levels and questions, with static seed fallback.
+- Attempt tracking: answer logging and wrong-question repository insertion.
+- Content admin: original/licensed question import with role checks.
+- Health check: service status and database ping.
+
+See [docs/backend.md](docs/backend.md) for environment setup, schema deployment,
+super-admin creation and endpoint notes.
 
 ## Mobile / PWA
 
