@@ -92,23 +92,26 @@ export default function HskPlatform() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">
               Learner target
             </h2>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {levels.map((level) => (
-                <button
-                  key={level.id}
-                  type="button"
-                  onClick={() => setActiveLevelId(level.id)}
-                  className={`rounded-md border px-3 py-3 text-left transition ${
-                    activeLevelId === level.id
-                      ? "border-emerald-500 bg-emerald-50 text-emerald-950"
-                      : "border-zinc-200 bg-white hover:border-emerald-300"
-                  }`}
-                >
-                  <span className="block text-lg font-semibold">HSK {level.id}</span>
-                  <span className="text-xs text-zinc-500">{level.targetWords} words</span>
-                </button>
-              ))}
+            <div className="mt-4 rounded-md border border-emerald-100 bg-emerald-50 p-3">
+              <p className="text-2xl font-semibold">HSK {activeLevel.id}</p>
+              <p className="mt-1 text-sm text-emerald-900">{activeLevel.name}</p>
+              <p className="mt-1 text-xs text-zinc-600">{activeLevel.targetWords} target words</p>
             </div>
+            <label className="mt-3 block text-sm font-medium text-zinc-700" htmlFor="level-select">
+              Choose level
+            </label>
+            <select
+              id="level-select"
+              value={activeLevelId}
+              onChange={(event) => setActiveLevelId(Number(event.target.value))}
+              className="mt-2 h-11 w-full rounded-md border border-emerald-200 bg-white px-3 text-sm font-semibold outline-none focus:border-emerald-500"
+            >
+              {levels.map((level) => (
+                <option key={level.id} value={level.id}>
+                  HSK {level.id} - {level.targetWords} words{level.id >= 7 ? " (Advanced)" : ""}
+                </option>
+              ))}
+            </select>
           </section>
 
           <section className="rounded-lg border border-emerald-100 bg-white p-4">

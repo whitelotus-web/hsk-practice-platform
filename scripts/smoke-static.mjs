@@ -35,6 +35,8 @@ function getData() {
 
 const indexHtml = readText("static-app", "index.html");
 const serviceWorker = readText("static-app", "sw.js");
+const appJs = readText("static-app", "app.js");
+const stylesCss = readText("static-app", "styles.css");
 const manifest = JSON.parse(readText("static-app", "manifest.webmanifest"));
 const legalTodo = readText("docs", "legal-content-todo.md");
 const data = getData();
@@ -54,6 +56,8 @@ for (const ref of versionedAssetRefs) {
 check(/CACHE_VERSION\s*=\s*"hsk-mastery-v\d+"/.test(serviceWorker), "service worker cache version is explicit");
 check(fs.existsSync(filePath("static-app", "offline.html")), "offline fallback exists");
 check(fs.existsSync(filePath("static-app", "icons", "icon.svg")), "PWA icon exists");
+check(appJs.includes("data-level-select"), "level selector uses compact select control");
+check(stylesCss.includes(".level-select"), "level selector has dedicated responsive styles");
 
 check(manifest.name === data.brand.appName, "manifest name matches product data");
 check(manifest.start_url === "./index.html", "manifest has static start_url");

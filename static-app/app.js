@@ -335,24 +335,31 @@
   }
 
   function renderLearningNav() {
+    const current = level();
     return `
       <section class="learn-nav">
         <div class="level-strip" aria-label="HSK levels">
           <div class="level-current">
             <span>${state.level}</span>
-            <strong>${escapeHtml(level().name)}</strong>
+            <div>
+              <strong>${escapeHtml(current.name)}</strong>
+              <small>${current.words} từ mục tiêu${current.id >= 7 ? " - Advanced" : ""}</small>
+            </div>
           </div>
-          <div class="level-options">
+          <label class="level-select-label">
+            <span>Cấp luyện thi</span>
+            <select class="select level-select" data-level-select aria-label="Chọn cấp HSK">
             ${data.levels
               .map(
                 (item) => `
-                  <button class="level-pill ${item.id === state.level ? "active" : ""}" data-level="${item.id}">
-                    ${item.id}
-                  </button>
+                  <option value="${item.id}" ${item.id === state.level ? "selected" : ""}>
+                    HSK ${item.id} - ${item.words} từ${item.id >= 7 ? " (Advanced)" : ""}
+                  </option>
                 `,
               )
               .join("")}
-          </div>
+            </select>
+          </label>
         </div>
         <nav class="skill-tabs" aria-label="Skill navigation">
           ${data.skills
@@ -1918,18 +1925,14 @@
 
     document.querySelectorAll("[data-level]").forEach((button) => {
       button.addEventListener("click", () => {
-        state.level = Number(button.dataset.level);
-        if (!(level().sections[state.skill] || []).length) {
-          state.skill = data.skills.find((skill) => (level().sections[skill.key] || []).length)?.key || "listening";
-        }
-        state.selectedQuestion = 0;
-        state.selectedAnswer = "";
-        state.analysisOpen = false;
-        state.activeMockQuestion = 1;
-        state.mockAnswers = {};
-        state.mockSubmitted = false;
-        state.mockStarted = false;
-        state.mockSeconds = currentMockDurationSeconds();
+        setLevel(Number(button.dataset.level));
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-level-select]").forEach((select) => {
+      select.addEventListener("change", () => {
+        setLevel(Number(select.value));
         render();
       });
     });
@@ -2048,6 +2051,23 @@
       element.addEventListener("change", handleAction);
       element.addEventListener("input", handleAction);
     });
+  }
+
+  function setLevel(nextLevel) {
+    if (!data.levels.some((item) => item.id === nextLevel)) return;
+
+    state.level = nextLevel;
+    if (!(level().sections[state.skill] || []).length) {
+      state.skill = data.skills.find((skill) => (level().sections[skill.key] || []).length)?.key || "listening";
+    }
+    state.selectedQuestion = 0;
+    state.selectedAnswer = "";
+    state.analysisOpen = false;
+    state.activeMockQuestion = 1;
+    state.mockAnswers = {};
+    state.mockSubmitted = false;
+    state.mockStarted = false;
+    state.mockSeconds = currentMockDurationSeconds();
   }
 
   function buildProductiveFeedback(question, draft) {
