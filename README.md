@@ -41,6 +41,18 @@ Open:
 http://localhost:4173
 ```
 
+## Quality Checks
+
+Before pushing updates to the live GitHub Pages site, run:
+
+```powershell
+npm run check:static
+```
+
+This validates JavaScript syntax, PWA asset references, Vietnamese-first locale
+settings, HSK 1-9 coverage, the HSK 7-9 Advanced model, mock-test references,
+vocabulary coverage, and the protected-content boundary.
+
 ## Free Web Hosting
 
 The current web app is configured for GitHub Pages through GitHub Actions.
