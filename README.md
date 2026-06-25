@@ -68,6 +68,15 @@ The backend requires `DATABASE_URL` and `AUTH_SECRET` for write APIs. Read-only
 content APIs can fall back to the static seed data while the database is not yet
 configured.
 
+Database bootstrap commands:
+
+```powershell
+npm run db:migrate
+npm run db:seed
+npm run db:check
+npm run db:promote-admin -- you@example.com
+```
+
 ## Free Web Hosting
 
 The current web app is configured for GitHub Pages through GitHub Actions.

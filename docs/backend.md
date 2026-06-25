@@ -24,7 +24,7 @@ Required variables:
 Apply the schema:
 
 ```powershell
-psql $env:DATABASE_URL -f docs/postgres-schema.sql
+npm run db:migrate
 ```
 
 The schema creates users, learner profiles, levels, skills, sections,
@@ -38,6 +38,24 @@ Seed data included in the schema:
 - Skills: listening, reading, writing, translation, speaking.
 - HSK levels 1-9, including HSK 7-9 advanced.
 - Subscription plan placeholders: Free, VIP, MAX, Organization.
+
+Import the current original starter content from `static-app/data.js`:
+
+```powershell
+npm run db:seed
+```
+
+The seed import is idempotent:
+
+- Questions are upserted by `external_id`.
+- Question options are replaced for the same question.
+- Vocabulary is upserted by `level_id + hanzi + pinyin`.
+
+Check database counts:
+
+```powershell
+npm run db:check
+```
 
 ## Current API Surface
 
@@ -64,12 +82,16 @@ Write endpoints:
 
 ## Create A Super Admin
 
-After registering the first account, promote it directly in PostgreSQL:
+After registering the first account, promote it with the script:
 
-```sql
-update users
-set role = 'super_admin'
-where email = 'you@example.com';
+```powershell
+npm run db:promote-admin -- you@example.com
+```
+
+The optional second argument can set another role:
+
+```powershell
+npm run db:promote-admin -- teacher@example.com teacher
 ```
 
 Other production roles:

@@ -1,6 +1,8 @@
 -- Initial PostgreSQL schema draft for the HSK Practice Platform.
 -- Content must be original or licensed; do not import protected third-party exams.
 
+create extension if not exists pgcrypto;
+
 create table users (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
@@ -170,7 +172,8 @@ create table vocab_items (
   hanzi text not null,
   pinyin text not null,
   meaning jsonb not null,
-  examples jsonb not null default '[]'::jsonb
+  examples jsonb not null default '[]'::jsonb,
+  unique (level_id, hanzi, pinyin)
 );
 
 create table vocab_reviews (
