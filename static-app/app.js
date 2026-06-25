@@ -16,6 +16,7 @@
     savedItems: saved.savedItems || [],
     wrongItems: saved.wrongItems || [],
     vocabProgress: saved.vocabProgress || {},
+    vocabDue: saved.vocabDue || {},
     essay: saved.essay || "",
     essayFeedback: saved.essayFeedback || null,
     productiveDrafts: saved.productiveDrafts || {},
@@ -44,7 +45,8 @@
     repoFilter: saved.repoFilter || "all",
     authTab: saved.authTab || "login",
     authMessage: saved.authMessage || "",
-    accountPanel: saved.accountPanel || "profile",
+    accountPanel: saved.accountPanel || slug(data.accountModules[0]?.[0]) || "profile",
+    accountMessage: saved.accountMessage || "",
     examInfoLevel: saved.examInfoLevel || saved.level || 1,
     testPlanYear: saved.testPlanYear || "2026",
     regulationTopic: saved.regulationTopic || "registration",
@@ -174,6 +176,7 @@
         savedItems: state.savedItems,
         wrongItems: state.wrongItems,
         vocabProgress: state.vocabProgress,
+        vocabDue: state.vocabDue,
         essay: state.essay,
         essayFeedback: state.essayFeedback,
         productiveDrafts: state.productiveDrafts,
@@ -190,6 +193,7 @@
         authTab: state.authTab,
         authMessage: state.authMessage,
         accountPanel: state.accountPanel,
+        accountMessage: state.accountMessage,
         examInfoLevel: state.examInfoLevel,
         testPlanYear: state.testPlanYear,
         regulationTopic: state.regulationTopic,
@@ -200,6 +204,28 @@
 
   function level() {
     return data.levels.find((item) => item.id === state.level) || data.levels[0];
+  }
+
+  function vocabDueLabel(item) {
+    return state.vocabDue[item.hanzi] || item.due;
+  }
+
+  function vocabDueCount() {
+    return data.vocab.filter((item) => vocabDueLabel(item) === "today").length;
+  }
+
+  function formatDueLabel(due) {
+    if (due === "today") return "hôm nay";
+    if (due === "tomorrow") return "ngày mai";
+    const dayMatch = String(due).match(/^(\d+)\s+days?$/);
+    if (dayMatch) return `${dayMatch[1]} ngày nữa`;
+    return due;
+  }
+
+  function nextVocabDue(grade, mastery) {
+    if (grade === "known") return mastery >= 90 ? "14 days" : "7 days";
+    if (grade === "hard") return "tomorrow";
+    return "today";
   }
 
   function questionList() {
@@ -415,7 +441,7 @@
 
   function renderOverview() {
     const current = level();
-    const dueCount = data.vocab.filter((item) => item.due === "today").length + state.wrongItems.length;
+    const dueCount = vocabDueCount() + state.wrongItems.length;
     const answered = Object.keys(state.mockAnswers).length + state.notes.length + state.savedItems.length;
     const correctMock = getMockScore().correct;
     const accuracy = answered ? Math.round((correctMock / Math.max(1, Object.keys(state.mockAnswers).length)) * 100) : 0;
@@ -911,7 +937,16 @@
             </div>
             ${
               state.mockSubmitted
-                ? `<article class="card feedback"><h3>Điểm: ${score.score}/100</h3><p class="muted">${score.correct}/${score.total} câu tự động chấm đúng. Phần viết sẽ chuyển sang rubric AI/giáo viên.</p></article>`
+                ? `<article class="card feedback">
+                    <div class="split">
+                      <div>
+                        <p class="muted">Kết quả tự động</p>
+                        <h3>Điểm: ${score.score}/100</h3>
+                      </div>
+                      <span class="tag ok">${score.correct}/${score.total} đúng</span>
+                    </div>
+                    <p class="muted">Phần viết, dịch và nói sẽ chuyển sang rubric AI/giáo viên.</p>
+                  </article>`
                 : ""
             }
           </section>
@@ -1002,6 +1037,7 @@
           ${items
             .map((item) => {
               const mastery = state.vocabProgress[item.hanzi] ?? item.mastery;
+              const due = vocabDueLabel(item);
               return `
                 <article class="card">
                   <span class="tag">HSK ${item.level}</span>
@@ -1009,7 +1045,7 @@
                   <p><strong>${escapeHtml(item.pinyin)}</strong> - ${escapeHtml(item.meaning)}</p>
                   <p class="muted">${escapeHtml(item.example || "")}</p>
                   ${progressBar(mastery)}
-                  <p class="muted">Hạn ôn: ${escapeHtml(item.due)}. Độ thành thạo: ${mastery}%</p>
+                  <p class="muted">Hạn ôn: ${escapeHtml(formatDueLabel(due))}. Độ thành thạo: ${mastery}%</p>
                   <div class="toolbar" style="justify-content:flex-start">
                     <button class="btn ghost" data-vocab-grade="again" data-vocab-id="${escapeHtml(item.hanzi)}">Học lại</button>
                     <button class="btn ghost" data-vocab-grade="hard" data-vocab-id="${escapeHtml(item.hanzi)}">Khó nhớ</button>
@@ -1031,7 +1067,7 @@
       ["Ghi chú của tôi", state.notes.length, "Điểm ngữ pháp, từ vựng, nhãn cá nhân"],
       ["Gia sư sửa bài", state.essay ? 1 : 0, "Bản nháp, nhận xét AI, nhận xét giáo viên"],
       ["Bản nháp dịch/nói", Object.keys(state.productiveDrafts).length, "Dịch, transcript nói, ghi âm cục bộ và nhận xét rubric"],
-      ["Đến hạn ôn", data.vocab.filter((item) => item.due === "today").length + state.wrongItems.length, "Ngày ôn SRS, độ tự tin, độ thành thạo"],
+      ["Đến hạn ôn", vocabDueCount() + state.wrongItems.length, "Ngày ôn SRS, độ tự tin, độ thành thạo"],
     ];
 
     const wrongRows = state.wrongItems
@@ -1314,12 +1350,13 @@
   function renderAccountCenter() {
     const activeKey = state.accountPanel;
     const active = data.accountModules.find(([name]) => slug(name) === activeKey) || data.accountModules[0];
+    const effectiveActiveKey = slug(active[0]);
     return `
       <section class="account-shell">
         <aside class="panel side-menu">
           <h3>Trung tâm tài khoản</h3>
           ${data.accountModules
-            .map(([name]) => `<button class="${slug(name) === activeKey ? "active" : ""}" data-account-panel="${slug(name)}">${escapeHtml(name)}</button>`)
+            .map(([name]) => `<button class="${slug(name) === effectiveActiveKey ? "active" : ""}" data-account-panel="${slug(name)}">${escapeHtml(name)}</button>`)
             .join("")}
         </aside>
         <div class="panel">
@@ -1337,8 +1374,9 @@
             <label>Cấp đang ôn<input class="input" value="HSK ${state.level}" /></label>
             <label>Ngày thi mục tiêu<input class="input" value="2026-07-18" /></label>
             <textarea class="textarea" placeholder="Nội dung phản hồi, yêu cầu hỗ trợ, lý do xóa tài khoản hoặc mã ưu đãi theo mục đang chọn."></textarea>
-            <button class="btn primary">${escapeHtml(t("save"))}</button>
+            <button class="btn primary" data-action="account-save">${escapeHtml(t("save"))}</button>
           </div>
+          ${state.accountMessage ? `<article class="card feedback" style="margin-top:16px"><p class="muted">${escapeHtml(state.accountMessage)}</p></article>` : ""}
         </div>
       </section>
     `;
@@ -1990,8 +2028,10 @@
       button.addEventListener("click", () => {
         const id = button.dataset.vocabId;
         const current = Number(state.vocabProgress[id] ?? (data.vocab.find((item) => item.hanzi === id)?.mastery || 0));
-        const delta = button.dataset.vocabGrade === "known" ? 12 : button.dataset.vocabGrade === "hard" ? 4 : -10;
+        const grade = button.dataset.vocabGrade;
+        const delta = grade === "known" ? 12 : grade === "hard" ? 4 : -10;
         state.vocabProgress[id] = Math.max(0, Math.min(100, current + delta));
+        state.vocabDue[id] = nextVocabDue(grade, state.vocabProgress[id]);
         render();
       });
     });
@@ -2081,6 +2121,7 @@
     if (action === "close-profile") state.profileOpen = false;
     if (action === "auth-submit") state.authMessage = "Luồng tài khoản đã được ghi nhận cục bộ. Khi nối backend sẽ cấu hình email/SMS/QR.";
     if (action === "app-store") state.contentMessage = "Link kho ứng dụng đang là TODO. Cần phát hành app gốc trước khi bật nút này.";
+    if (action === "account-save") state.accountMessage = "Đã ghi nhận thay đổi cục bộ. Khi nối backend, hồ sơ sẽ đồng bộ theo tài khoản thật.";
     if (action === "install-pwa") {
       if (state.isStandalone) {
         state.pwaMessage = "Ứng dụng đang chạy ở chế độ app độc lập.";
