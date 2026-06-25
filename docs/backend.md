@@ -5,6 +5,9 @@ is implemented in the Next.js app and should be deployed to a Node-compatible
 host such as Vercel, Render, Railway, Fly.io, or a VPS, with PostgreSQL on Neon,
 Supabase, Railway, Render, or a managed Postgres provider.
 
+For the first production deployment runbook, see
+[`docs/production-deploy.md`](production-deploy.md).
+
 ## Environment
 
 Copy `.env.example` to `.env.local` for local development:
@@ -18,6 +21,12 @@ Required variables:
 - `DATABASE_URL`: PostgreSQL connection string.
 - `AUTH_SECRET`: at least 32 random characters for signed session cookies.
 - `AUTH_COOKIE_NAME`: optional cookie name, defaults to `hsk_session`.
+
+Generate a local secret:
+
+```powershell
+npm run auth:secret
+```
 
 ## Database
 

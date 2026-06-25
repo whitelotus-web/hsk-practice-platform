@@ -14,6 +14,8 @@ experience.
 - `docs/implementation-plan.md`: phased implementation plan.
 - `docs/backend.md`: backend setup, environment variables, API surface and
   super-admin notes.
+- `docs/production-deploy.md`: production deployment runbook for Vercel plus
+  PostgreSQL.
 - Mobile status: PWA v1 is implemented in `static-app`; native iOS/Android is
   planned after backend/API stabilization.
 
@@ -71,6 +73,7 @@ configured.
 Database bootstrap commands:
 
 ```powershell
+npm run auth:secret
 npm run db:migrate
 npm run db:seed
 npm run db:check
