@@ -24,6 +24,27 @@ wording, or proprietary databases.
 - `https://www.hskonline.com/en/site/login`
 - `https://www.hskonline.com/en/site/signup`
 
+## Authenticated Sources Checked
+
+Inspected after owner login on 2026-06-29. Account-specific private values and
+question content are intentionally excluded from this note.
+
+- `https://www.hskonline.com/en/account`
+- `https://www.hskonline.com/en/account/update`
+- `https://www.hskonline.com/en/account/message`
+- `https://www.hskonline.com/en/account/active`
+- `https://www.hskonline.com/en/account/feedback`
+- `https://www.hskonline.com/en/account/password`
+- `https://www.hskonline.com/en/1/1`
+- `https://www.hskonline.com/en/1/1/practice?lid=8&sid=4`
+- `https://www.hskonline.com/en/1/1/practice?lid=8`
+- `https://www.hskonline.com/en/1/my/practice`
+- `https://www.hskonline.com/en/1/my/errors`
+- `https://www.hskonline.com/en/1/4`
+- `https://www.hskonline.com/en/1/4/test?id=347`
+- `https://www.hskonline.com/en/1/4/report?pid=771991`
+- `https://www.hskonline.com/en/upgrade/index`
+
 ## Current Public Product Model
 
 ### Positioning
@@ -89,8 +110,150 @@ Public auth model:
 - App download links.
 - Corporate services and upgrade entry points.
 
-Public pages do not expose the full logged-in learner/account center. This still
-requires authenticated inspection.
+Public pages expose the acquisition funnel, while the authenticated surface
+confirms the daily learning, repository, report and account-management loops
+below.
+
+## Authenticated Product Model
+
+### Logged-In Navigation
+
+After login, the web product adds:
+
+- Profile dropdown with account center and logout.
+- HSK level selector for HSK 1-6.
+- Skill tabs by level: Listening, Reading, Writing where applicable, Tests and
+  My exercise.
+- Locale switcher preserves the current path across 13 public locales.
+
+### Practice Player
+
+Observed HSK 1 listening practice mechanics:
+
+- Section rows show progress, correct count/answer count and Single Training.
+- Single Training opens a small batch of questions.
+- Question player supports audio/image assets, previous/next navigation, answer
+  checking, report/correction, collection and note-taking.
+- After answering, the learner can see the correct answer, answer analysis,
+  answer volume and correct-rate metadata.
+
+Upgrade implication for our product: implement the same learning mechanics with
+original/licensed questions, then improve it with clear weak-point tags,
+teacher notes, confidence tracking and "learn this concept again" actions.
+
+### Smart Quiz And Entitlement
+
+Smart Quiz is not a simple public practice route for a free account. The
+observed route redirects to an upgrade page.
+
+Observed conversion mechanics:
+
+- Free AI-powered proficiency test promise.
+- Limited HSK 1-6 access for free users.
+- VIP/companion/course packaging.
+- Upgrade claims around complete content, AI learning, answer analysis, grammar
+  explanations and online teachers.
+
+Upgrade implication for our product: create entitlement tiers, but keep a better
+free path than competitors: diagnostic test, daily review, limited mock reports,
+and clear upgrade prompts only when a feature is genuinely premium.
+
+### My Exercise Repository
+
+Observed logged-in repository tabs:
+
+- Studying Overview.
+- Wrong questions collection.
+- Essay tutoring.
+- Problem collection.
+- My note.
+
+Observed dashboard metrics:
+
+- Per-level exercise overview.
+- Progress, total answers, quiz paper count, vocabulary training and study
+  duration.
+- Skill breakdown by Listening/Reading/Writing where applicable.
+- Section-level breakdown with answered count, right count and progress.
+
+Observed wrong-question filters:
+
+- Classification: all/skill-specific.
+- Question resource: all/training exercise/past exams/mocks.
+- Question type: all plus section-specific types.
+- Item actions: report/correction, collection, note and answer analysis.
+
+Upgrade implication for our product: make "My exercise" a first-class learner
+workspace, not a secondary archive. Add filters by level, skill, question type,
+source, wrong count, due review date, teacher-reviewed status and AI weakness
+tag.
+
+### Mock Test Flow
+
+Observed test catalog:
+
+- Real Mock exam set group.
+- Mocks set group.
+- Each set can show previous score/history when available.
+
+Observed mock intro page:
+
+- Test content table by skill and section.
+- Total question count and section timing.
+- Start testing action.
+- My history section with submission time, right/wrong count, accuracy and
+  report link.
+
+Observed report page:
+
+- Total questions, right count, accuracy and time.
+- Skill-level score table.
+- Question-type score table.
+- Answer sheet grouped by section.
+- Question number navigation.
+- Previous/next question controls.
+
+Upgrade implication for our product: implement the same full attempt lifecycle
+and improve the report with:
+
+- CEFR/HSK readiness estimate.
+- Weak knowledge points.
+- Time-per-question anomalies.
+- Recommended drills generated from missed skills.
+- Exportable study plan after every mock.
+
+### Account Center
+
+Observed account modules:
+
+- Personal information.
+- Edit personal profile.
+- My message.
+- Member card/coupon exchange.
+- Feedback submission.
+- Password change.
+
+Observed editable profile fields:
+
+- Avatar.
+- Nickname.
+- Nationality.
+- Current location.
+- Gender.
+- Age.
+- Test goal.
+- Target HSK level.
+
+Upgrade implication for our product: implement account center with stronger
+privacy and admin controls:
+
+- Profile and goal settings.
+- Notifications/messages.
+- Coupon/license redemption.
+- Feedback/ticket system.
+- Password/security settings.
+- Account deletion request with audit trail.
+- Admin view of users, roles, membership and support tickets.
 
 ## Where Our Product Already Matches Or Exceeds Public Model
 
@@ -161,6 +324,20 @@ Required upgrade:
   - essays
   - vocab due reviews
 - Add filters by level, skill, source, status, due date and wrong count.
+- Add per-question metadata visible to learners:
+  - correct answer
+  - learner answer
+  - answer analysis
+  - question source
+  - answered volume
+  - correct-rate benchmark
+  - weak-point tag
+- Add learner actions:
+  - report/correction
+  - save/collect
+  - note
+  - review later
+  - generate similar drill
 
 Priority: P1.
 
@@ -180,10 +357,41 @@ Required upgrade:
   - review
 - Add unanswered review, timer restore, submit confirmation and score report.
 - Add post-test weak-point drill generation.
+- Add mock intro page with:
+  - section table
+  - total questions
+  - section timing
+  - start/continue action
+  - previous history
+- Add report page with:
+  - skill-level score
+  - question-type score
+  - answer sheet
+  - question navigation
+  - review controls
 
 Priority: P1.
 
-### 5. HSK 7-9 Differentiation
+### 5. Account Center And Support Operations
+
+Current state: frontend has account/auth placeholders and backend route
+foundation, but the production account center is not complete.
+
+Required upgrade:
+
+- Profile settings: avatar, nickname, nationality, location, gender, age, test
+  goal and target HSK level.
+- Security settings: password change, active sessions and account deletion
+  request.
+- Messages/notifications.
+- Feedback/support ticket submission.
+- Coupon/license redemption for future paid plans or school seats.
+- Super admin user view with roles, membership, support status and learning
+  activity summary.
+
+Priority: P1.
+
+### 6. HSK 7-9 Differentiation
 
 Current state: our product already has the product structure for Advanced HSK.
 
@@ -201,7 +409,7 @@ Required upgrade:
 
 Priority: P0/P1 because this is the strongest competitive wedge.
 
-### 6. AI Layer
+### 7. AI Layer
 
 Current state: local rubric feedback exists, but no real AI service.
 
@@ -216,7 +424,7 @@ Required upgrade:
 
 Priority: P2 after backend/content persistence.
 
-### 7. Product Polish
+### 8. Product Polish
 
 Public HSKOnline is compact and app-first. Our current web prototype is broader
 and more admin-heavy.
@@ -234,6 +442,10 @@ Required upgrade:
 - Keep admin/content screens behind a role switch.
 - Make upgrade/pricing and app download visually production-grade with original
   assets.
+- Add compact level selector rather than a wide HSK 1-9 row on constrained
+  screens.
+- Keep a calm Vietnamese-first learner UI; move English/internal wording into
+  translation backlog.
 
 Priority: P1/P2.
 
@@ -265,11 +477,16 @@ Deliverables:
 - Saved notes backed by DB.
 - Vocab SRS review persistence.
 - Account center reads/writes profile from DB.
+- Feedback ticket creation.
+- Message/notification list.
+- Coupon/license redemption data model.
 
 Exit criteria:
 
 - Refreshing browser keeps learning history from backend, not only
   `localStorage`.
+- Profile edits, notes, saved questions and feedback survive device/browser
+  changes.
 
 ### Sprint C - CMS And Content Workflow
 
@@ -295,6 +512,8 @@ Deliverables:
 - Answer sheet and unanswered review.
 - Score report.
 - Wrong-answer drill generation.
+- Mock history and report review.
+- Per-section and per-question-type analytics.
 
 Exit criteria:
 
@@ -316,19 +535,34 @@ Exit criteria:
 - Product can credibly market HSK 7-9 as a stronger module than competitors,
   while content remains original/licensed.
 
-## Authenticated HSKOnline Inspection Needed
+## Remaining Inspection Boundaries
 
-Need the owner to log in before confirming:
+Already confirmed after login:
 
-- Logged-in dashboard.
-- Exact Smart Quiz behavior.
-- Real practice player behavior after starting a section.
-- Mock exam start/submit/report flow.
-- VIP/Plus entitlements.
-- Account center internals.
-- My exercise repository filters.
-- App QR/login handoff behavior.
-- Whether web exposes anything for HSK 7-9 or if it is app-only.
+- Logged-in account center.
+- Practice section structure.
+- Single Training player mechanics.
+- Smart Quiz upgrade gate.
+- My exercise overview.
+- Wrong-question repository filters.
+- Mock catalog, mock intro and existing mock report.
+- Locale switcher behavior on logged-in routes.
+
+Still avoid without explicit action-time approval:
+
+- Starting a new mock attempt, because it may create account history.
+- Submitting any practice/test answers.
+- Sending feedback/support forms.
+- Changing profile/security fields.
+- Redeeming coupon/member cards.
+- Opening purchase/payment flows beyond read-only plan inspection.
+
+Still unknown or likely app-only:
+
+- Native mobile app onboarding and app QR/login handoff.
+- Full VIP/Plus premium content depth.
+- Whether HSK 7-9 exists anywhere in their mobile app.
+- Teacher/tutoring operations behind paid access.
 
 Do not copy any locked/premium content. Record only product mechanics, states,
 navigation, metadata and UX patterns.
