@@ -44,6 +44,9 @@ question content are intentionally excluded from this note.
 - `https://www.hskonline.com/en/1/4/test?id=347`
 - `https://www.hskonline.com/en/1/4/report?pid=771991`
 - `https://www.hskonline.com/en/upgrade/index`
+- `https://www.hskonline.com/en/7/start`
+- `https://www.hskonline.com/en/8/start`
+- `https://www.hskonline.com/en/9/start`
 
 ## Current Public Product Model
 
@@ -122,6 +125,8 @@ After login, the web product adds:
 
 - Profile dropdown with account center and logout.
 - HSK level selector for HSK 1-6.
+- Direct logged-in web routes for HSK 7, HSK 8 and HSK 9 return not-found
+  pages, so advanced HSK is not exposed on the checked web surface.
 - Skill tabs by level: Listening, Reading, Writing where applicable, Tests and
   My exercise.
 - Locale switcher preserves the current path across 13 public locales.
@@ -547,6 +552,7 @@ Already confirmed after login:
 - Wrong-question repository filters.
 - Mock catalog, mock intro and existing mock report.
 - Locale switcher behavior on logged-in routes.
+- HSK 7/8/9 direct web routes return not-found pages.
 
 Still avoid without explicit action-time approval:
 
@@ -561,7 +567,8 @@ Still unknown or likely app-only:
 
 - Native mobile app onboarding and app QR/login handoff.
 - Full VIP/Plus premium content depth.
-- Whether HSK 7-9 exists anywhere in their mobile app.
+- Whether HSK 7-9 exists anywhere in their mobile app; it was not found on the
+  logged-in web routes checked here.
 - Teacher/tutoring operations behind paid access.
 
 Do not copy any locked/premium content. Record only product mechanics, states,
