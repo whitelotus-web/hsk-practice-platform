@@ -11,6 +11,8 @@ experience.
 - `src/`: Next.js app plus the first backend API layer for auth, profile,
   content, attempts and admin question import.
 - `docs/supertest-audit.md`: observed product model and upgrade notes.
+- `docs/hskonline-reaudit-2026-06-29.md`: latest public HSKOnline/SuperTest
+  re-audit and upgrade plan.
 - `docs/implementation-plan.md`: phased implementation plan.
 - `docs/backend.md`: backend setup, environment variables, API surface and
   super-admin notes.
