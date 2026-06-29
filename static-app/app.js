@@ -43,6 +43,7 @@
     mockAnswers: saved.mockAnswers || {},
     activeMockQuestion: saved.activeMockQuestion || 1,
     repoFilter: saved.repoFilter || "all",
+    repoTab: saved.repoTab || "overview",
     authTab: saved.authTab || "login",
     authMessage: saved.authMessage || "",
     accountPanel: saved.accountPanel || slug(data.accountModules[0]?.[0]) || "profile",
@@ -190,6 +191,7 @@
         mockAnswers: state.mockAnswers,
         activeMockQuestion: state.activeMockQuestion,
         repoFilter: state.repoFilter,
+        repoTab: state.repoTab,
         authTab: state.authTab,
         authMessage: state.authMessage,
         accountPanel: state.accountPanel,
@@ -1178,42 +1180,87 @@
   }
 
   function renderRepository() {
-    const rows = [
-      ["Câu sai", state.wrongItems.length, "Kỹ năng, nguồn, phần thi, số lần sai, độ tự tin"],
-      ["Bộ sưu tập câu hỏi", state.savedItems.length, "Câu đã lưu, bộ đề, độ khó, nhãn"],
-      ["Ghi chú của tôi", state.notes.length, "Điểm ngữ pháp, từ vựng, nhãn cá nhân"],
-      ["Gia sư sửa bài", state.essay ? 1 : 0, "Bản nháp, nhận xét AI, nhận xét giáo viên"],
-      ["Bản nháp dịch/nói", Object.keys(state.productiveDrafts).length, "Dịch, transcript nói, ghi âm cục bộ và nhận xét rubric"],
-      ["Đến hạn ôn", vocabDueCount() + state.wrongItems.length, "Ngày ôn SRS, độ tự tin, độ thành thạo"],
+    const tabs = [
+      ["overview", "Tổng quan"],
+      ["wrong", "Câu sai"],
+      ["saved", "Bộ sưu tập"],
+      ["notes", "Ghi chú"],
+      ["productive", "Bài viết/dịch/nói"],
     ];
-
-    const wrongRows = state.wrongItems
-      .map((id) => data.practiceQuestions.find((item) => item.id === id))
-      .filter(Boolean);
+    const allWrongRows = state.wrongItems.map((id) => data.practiceQuestions.find((item) => item.id === id)).filter(Boolean);
+    const wrongRows = allWrongRows.filter((item) => state.repoFilter === "all" || item.skill === state.repoFilter || (state.repoFilter === "mocks" && item.source === "mock"));
+    const savedRows = state.savedItems.map((id) => data.practiceQuestions.find((item) => item.id === id)).filter(Boolean);
+    const draftRows = Object.entries(state.productiveDrafts).map(([id, draft]) => {
+      const question = data.practiceQuestions.find((item) => item.id === id) || {};
+      return { id, draft, question };
+    });
+    const dueVocab = data.vocab.filter((item) => vocabDueLabel(item) === "today");
+    const rows = [
+      ["Câu sai", allWrongRows.length, "Theo kỹ năng, nguồn, dạng câu và hạn ôn"],
+      ["Bộ sưu tập", savedRows.length, "Câu đã lưu để luyện lại hoặc hỏi giáo viên"],
+      ["Ghi chú", state.notes.length, "Ghi chú ngữ pháp, từ vựng, chiến thuật làm bài"],
+      ["Bài tạo sinh", draftRows.length + (state.essay ? 1 : 0), "Bài viết, dịch, nói và nhận xét rubric"],
+      ["Đến hạn ôn", dueVocab.length + allWrongRows.length, "SRS + câu sai cần quay lại hôm nay"],
+      ["Mock đã nộp", state.mockSubmitted ? 1 : 0, "Báo cáo điểm và kế hoạch ôn sau thi"],
+    ];
+    const table =
+      state.repoTab === "wrong"
+        ? {
+            head: ["Mã câu", "Kỹ năng", "Dạng câu", "Nguồn", "Việc cần làm"],
+            empty: "Chưa có câu sai. Khi trả lời sai, câu hỏi sẽ tự xuất hiện tại đây.",
+            rows: wrongRows.map((item) => [item.id, t(item.skill, item.skill), item.type, item.source || "original", "Làm lại + xem phân tích"]),
+          }
+        : state.repoTab === "saved"
+          ? {
+              head: ["Mã câu", "Kỹ năng", "Dạng câu", "Ghi chú"],
+              empty: "Chưa lưu câu nào. Bấm Lưu câu trong màn luyện để tạo bộ sưu tập.",
+              rows: savedRows.map((item) => [item.id, t(item.skill, item.skill), item.type, "Chờ luyện lại"]),
+            }
+          : state.repoTab === "notes"
+            ? {
+                head: ["STT", "Nội dung ghi chú", "Nguồn", "Trạng thái"],
+                empty: "Chưa có ghi chú. Khi bấm Thêm ghi chú, nội dung sẽ nằm ở đây.",
+                rows: state.notes.map((note, index) => [index + 1, note, `HSK ${state.level}`, "Đang học"]),
+              }
+            : state.repoTab === "productive"
+              ? {
+                  head: ["Mã bài", "Kỹ năng", "Độ dài", "Trạng thái"],
+                  empty: "Chưa có bài viết/dịch/nói. Mở HSK 7-9 Dịch hoặc Nói để tạo bản nháp.",
+                  rows: [
+                    ...(state.essay ? [["essay-current", "Viết", `${Array.from(state.essay).length} ký tự`, state.essayFeedback ? "Đã có nhận xét" : "Chờ nhận xét"]] : []),
+                    ...draftRows.map(({ id, draft, question }) => [id, t(question.skill, question.skill || "Bài tạo sinh"), `${Array.from(draft).length} ký tự`, state.productiveFeedback[id] ? "Đã có rubric" : "Bản nháp"]),
+                  ],
+                }
+              : {
+                  head: ["Hạng mục", "Số lượng", "Ý nghĩa", "Hành động"],
+                  empty: "",
+                  rows: rows.map(([name, count, desc]) => [name, count, desc, "Mở tab chi tiết"]),
+                };
 
     return `
       <section class="panel">
         <div class="split">
           <div>
             <h2>Kho bài luyện cá nhân</h2>
-            <p class="muted">Trung tâm ôn tập cá nhân: câu sai, câu đã lưu, ghi chú, bài viết và lịch ôn.</p>
+            <p class="muted">Trung tâm ôn tập cá nhân theo mô hình My exercise: tổng quan, câu sai, bộ sưu tập, ghi chú, bài viết/dịch/nói và lịch ôn SRS.</p>
           </div>
           <select class="select" data-action="repo-filter">
             ${["all", "listening", "reading", "writing", "translation", "speaking", "mocks"].map((item) => `<option value="${item}" ${state.repoFilter === item ? "selected" : ""}>${escapeHtml(item === "all" ? "tất cả" : t(item, item))}</option>`).join("")}
           </select>
         </div>
+        <nav class="repo-tabs" aria-label="Kho cá nhân">
+          ${tabs.map(([key, label]) => `<button class="tab-btn ${state.repoTab === key ? "active" : ""}" data-repo-tab="${key}">${escapeHtml(label)}</button>`).join("")}
+        </nav>
         <div class="grid repo-grid">
-          ${rows.map(([name, count, filter]) => `<article class="card"><h2>${count}</h2><h3>${escapeHtml(name)}</h3><p class="muted">${escapeHtml(filter)}</p></article>`).join("")}
+          ${rows.map(([name, count, desc]) => `<article class="card"><h2>${count}</h2><h3>${escapeHtml(name)}</h3><p class="muted">${escapeHtml(desc)}</p></article>`).join("")}
         </div>
-        <table class="table" style="margin-top:16px">
-          <thead><tr><th>Mã câu</th><th>Kỹ năng</th><th>Dạng câu</th><th>Trạng thái</th></tr></thead>
+        <table class="table repo-table" style="margin-top:16px">
+          <thead><tr>${table.head.map((item) => `<th>${escapeHtml(item)}</th>`).join("")}</tr></thead>
           <tbody>
             ${
-              wrongRows.length
-                ? wrongRows
-                    .map((item) => `<tr><td>${escapeHtml(item.id)}</td><td>${escapeHtml(t(item.skill, item.skill))}</td><td>${escapeHtml(item.type)}</td><td>Đến hạn ôn</td></tr>`)
-                    .join("")
-                : '<tr><td colspan="4">Chưa có câu sai. Khi trả lời sai, câu hỏi sẽ tự xuất hiện tại đây.</td></tr>'
+              table.rows.length
+                ? table.rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")
+                : `<tr><td colspan="${table.head.length}">${escapeHtml(table.empty)}</td></tr>`
             }
           </tbody>
         </table>
@@ -2147,6 +2194,13 @@
     document.querySelectorAll("[data-account-panel]").forEach((button) => {
       button.addEventListener("click", () => {
         state.accountPanel = button.dataset.accountPanel;
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-repo-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.repoTab = button.dataset.repoTab;
         render();
       });
     });

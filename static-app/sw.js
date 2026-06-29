@@ -1,11 +1,11 @@
-const CACHE_VERSION = "hsk-mastery-v8";
+const CACHE_VERSION = "hsk-mastery-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./offline.html",
-  "./styles.css?v=20260629a",
-  "./data.js?v=20260629a",
-  "./app.js?v=20260629a",
+  "./styles.css?v=20260629b",
+  "./data.js?v=20260629b",
+  "./app.js?v=20260629b",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/apple-touch-icon.svg",

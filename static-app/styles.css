@@ -1290,6 +1290,18 @@ button:focus-visible {
   padding: 14px;
 }
 
+.repo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.repo-table td,
+.repo-table th {
+  vertical-align: top;
+}
+
 .mock-report {
   margin-bottom: 14px;
 }
