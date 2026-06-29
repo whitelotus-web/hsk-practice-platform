@@ -504,6 +504,39 @@
             .map(([label, value, hint]) => `<article class="card"><p class="muted">${escapeHtml(label)}</p><h2>${escapeHtml(value)}</h2><p class="muted">${escapeHtml(hint)}</p></article>`)
             .join("")}
         </section>
+        <section class="learner-command">
+          <article class="command-main">
+            <div>
+              <p class="eyebrow">Bàn học hôm nay</p>
+              <h2>Tiếp tục HSK ${state.level}: ${escapeHtml(current.name)}</h2>
+              <p class="muted">Lịch học ưu tiên được tạo từ tiến độ, câu sai, từ vựng đến hạn và mục tiêu thi. Khi nối backend, khối này sẽ đồng bộ theo tài khoản thật.</p>
+            </div>
+            <div class="command-actions">
+              <button class="btn primary" data-view="practice">Luyện tiếp</button>
+              <button class="btn ghost" data-view="repository">Mở kho câu sai</button>
+              <button class="btn ghost" data-view="mock">Thi thử</button>
+            </div>
+          </article>
+          <div class="command-rail">
+            ${[
+              ["1", "Làm 5-10 câu yếu", state.wrongItems.length ? `${state.wrongItems.length} câu sai đang chờ ôn` : "Bắt đầu bằng section đầu tiên"],
+              ["2", "Ôn SRS", `${vocabDueCount()} từ đến hạn hôm nay`],
+              ["3", state.level >= 7 ? "Drill dịch/nói" : "Mock mini", state.level >= 7 ? "Ưu tiên Advanced HSK 7-9" : "Kiểm tra 20-40 phút"],
+            ]
+              .map(
+                ([no, title, desc]) => `
+                  <article class="command-step">
+                    <span>${escapeHtml(no)}</span>
+                    <div>
+                      <strong>${escapeHtml(title)}</strong>
+                      <p class="muted">${escapeHtml(desc)}</p>
+                    </div>
+                  </article>
+                `,
+              )
+              .join("")}
+          </div>
+        </section>
         <section class="feature-band">
           <h2>${escapeHtml(t("ourSpecialties"))}</h2>
           <div class="grid module-grid">
@@ -868,6 +901,82 @@
     return { correct, total: questions.length, score: questions.length ? Math.round((correct / questions.length) * 100) : 0 };
   }
 
+  function getMockBreakdown() {
+    const questions = mockQuestions();
+    const groups = {};
+    questions.forEach((question, index) => {
+      const key = question.skill || "general";
+      if (!groups[key]) groups[key] = { total: 0, answered: 0, correct: 0, manual: 0 };
+      groups[key].total += 1;
+      if (question.answer === "manual") groups[key].manual += 1;
+      if (state.mockAnswers[index + 1]) groups[key].answered += 1;
+      if (question.answer !== "manual" && state.mockAnswers[index + 1] === question.answer) groups[key].correct += 1;
+    });
+    return Object.entries(groups).map(([skill, row]) => ({
+      skill,
+      ...row,
+      accuracy: row.total - row.manual ? Math.round((row.correct / (row.total - row.manual)) * 100) : 0,
+    }));
+  }
+
+  function renderMockReport(score, questions) {
+    const breakdown = getMockBreakdown();
+    const weakRows = breakdown
+      .filter((row) => row.accuracy < 70 || row.answered < row.total)
+      .sort((a, b) => a.accuracy - b.accuracy)
+      .slice(0, 3);
+    const answered = Object.keys(state.mockAnswers).length;
+    const estimate =
+      state.level >= 7
+        ? score.score >= 85
+          ? "HSK 9"
+          : score.score >= 70
+            ? "HSK 8"
+            : "HSK 7"
+        : `HSK ${state.level}`;
+
+    return `
+      <article class="mock-report card feedback">
+        <div class="split">
+          <div>
+            <p class="eyebrow">Báo cáo sau thi</p>
+            <h3>Điểm tạm tính: ${score.score}/100</h3>
+            <p class="muted">${score.correct}/${score.total} câu trắc nghiệm đúng, ${answered}/${questions.length} câu đã trả lời. Phần viết/dịch/nói cần rubric AI hoặc giáo viên.</p>
+          </div>
+          <span class="tag ok">Ước tính: ${escapeHtml(estimate)}</span>
+        </div>
+        <div class="report-grid">
+          ${breakdown
+            .map(
+              (row) => `
+                <div class="report-row">
+                  <div>
+                    <strong>${escapeHtml(t(row.skill, row.skill))}</strong>
+                    <p class="muted">${row.answered}/${row.total} câu đã làm${row.manual ? `, ${row.manual} câu chấm rubric` : ""}</p>
+                  </div>
+                  <div>
+                    ${progressBar(row.accuracy)}
+                    <span>${row.accuracy}%</span>
+                  </div>
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="drill-plan">
+          <strong>Kế hoạch ôn sau thi</strong>
+          <ul>
+            ${
+              weakRows.length
+                ? weakRows.map((row) => `<li>Ôn ${escapeHtml(t(row.skill, row.skill))}: làm lại câu sai, thêm 10 câu mini drill và cập nhật ghi chú.</li>`).join("")
+                : "<li>Điểm ổn định. Chuyển sang đề khó hơn hoặc full mock tiếp theo.</li>"
+            }
+          </ul>
+        </div>
+      </article>
+    `;
+  }
+
   function renderMock() {
     const questions = mockQuestions();
     if (state.activeMockQuestion > questions.length) state.activeMockQuestion = questions.length;
@@ -960,6 +1069,7 @@
         </div>
         <aside class="panel">
           <h3>${escapeHtml(t("answerSheet"))}</h3>
+          ${state.mockSubmitted ? renderMockReport(score, questions) : ""}
           <div class="question-grid">
             ${questions
               .map((question, index) => {
@@ -1358,6 +1468,15 @@
     const activeKey = state.accountPanel;
     const active = data.accountModules.find(([name]) => slug(name) === activeKey) || data.accountModules[0];
     const effectiveActiveKey = slug(active[0]);
+    const accountBlocks = [
+      ["Hồ sơ học viên", "Biệt danh, quốc tịch, nơi ở, mục tiêu thi và cấp HSK đang ôn.", "profile"],
+      ["Thông báo", "Tin nhắn hệ thống, phản hồi giáo viên, cảnh báo đến hạn ôn và biến động gói học.", "messages"],
+      ["Thành viên", `Gói hiện tại: ${state.plan}. Chuẩn bị thêm ngày hết hạn, quyền lợi và lịch sử thanh toán.`, "membership"],
+      ["Coupon", "Nhập mã trường học, mã chiến dịch, credit giáo viên sửa bài hoặc license doanh nghiệp.", "coupon"],
+      ["Hỗ trợ", "Gửi feedback, lỗi câu hỏi, lỗi audio, yêu cầu tính năng và theo dõi trạng thái ticket.", "support"],
+      ["Bảo mật", "Đổi mật khẩu, phiên đăng nhập, xác minh hai bước và cảnh báo thiết bị mới.", "security"],
+      ["Quyền riêng tư", "Xuất dữ liệu, yêu cầu xóa tài khoản và lưu audit trail cho super admin.", "privacy"],
+    ];
     return `
       <section class="account-shell">
         <aside class="panel side-menu">
@@ -1382,6 +1501,19 @@
             <label>Ngày thi mục tiêu<input class="input" value="2026-07-18" /></label>
             <textarea class="textarea" placeholder="Nội dung phản hồi, yêu cầu hỗ trợ, lý do xóa tài khoản hoặc mã ưu đãi theo mục đang chọn."></textarea>
             <button class="btn primary" data-action="account-save">${escapeHtml(t("save"))}</button>
+          </div>
+          <div class="account-modules">
+            ${accountBlocks
+              .map(
+                ([title, desc, kind]) => `
+                  <article class="account-module ${kind}">
+                    <span class="tag">${escapeHtml(kind)}</span>
+                    <h3>${escapeHtml(title)}</h3>
+                    <p class="muted">${escapeHtml(desc)}</p>
+                  </article>
+                `,
+              )
+              .join("")}
           </div>
           ${state.accountMessage ? `<article class="card feedback" style="margin-top:16px"><p class="muted">${escapeHtml(state.accountMessage)}</p></article>` : ""}
         </div>
