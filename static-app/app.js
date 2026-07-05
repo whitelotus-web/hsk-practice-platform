@@ -52,7 +52,39 @@
     testPlanYear: saved.testPlanYear || "2026",
     regulationTopic: saved.regulationTopic || "registration",
     tutoringMessage: saved.tutoringMessage || "",
+    theme: saved.theme || (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light"),
+    mobileMenuOpen: false,
+    flashcardFlipped: {},
+    searchQuery: "",
+    toasts: [],
   };
+
+  // Apply theme
+  function applyTheme() {
+    document.documentElement.setAttribute("data-theme", state.theme);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", state.theme === "dark" ? "#0c0a09" : "#9f1239");
+  }
+  applyTheme();
+
+  // Toast system
+  function showToast(message, type = "info") {
+    const id = Date.now() + Math.random();
+    state.toasts.push({ id, message, type });
+    renderToasts();
+    setTimeout(() => {
+      state.toasts = state.toasts.filter((t) => t.id !== id);
+      renderToasts();
+    }, 3500);
+  }
+
+  function renderToasts() {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+    container.innerHTML = state.toasts
+      .map((t) => `<div class="toast ${t.type}">${escapeHtml(t.message)}</div>`)
+      .join("");
+  }
 
   let speechRecorder = null;
   let speechStream = null;
@@ -200,6 +232,7 @@
         testPlanYear: state.testPlanYear,
         regulationTopic: state.regulationTopic,
         tutoringMessage: state.tutoringMessage,
+        theme: state.theme,
       }),
     );
   }
@@ -290,7 +323,7 @@
     document.getElementById("app").innerHTML = `
       <div class="app">
         ${renderHeader()}
-        <main>
+        <main class="animate-in">
           ${
             state.view === "overview"
               ? renderOverview()
@@ -309,27 +342,33 @@
   }
 
   function renderHeader() {
+    const navItems = [
+      ["practice", t("learnOnline")],
+      ["exam", t("aboutTest")],
+      ["schedule", t("testPlan")],
+      ["corporate", t("corporateServices")],
+      ["app", t("downloadApp")],
+      ["pricing", t("upgrade")],
+      ["content", t("contentAdmin")],
+    ];
     return `
-      <header class="site-header">
+      <header class="site-header" id="site-header">
         <div class="wrap site-nav">
           <button class="brand" data-view="overview" aria-label="Home">
             <span class="brand-mark">学</span>
             <span>${escapeHtml(data.brand.appName)}</span>
           </button>
-          <nav class="main-nav" aria-label="Website navigation">
-            <button data-view="practice">${escapeHtml(t("learnOnline"))}</button>
-            <button data-view="exam">${escapeHtml(t("aboutTest"))}</button>
-            <button data-view="schedule">${escapeHtml(t("testPlan"))}</button>
-            <button data-view="corporate">${escapeHtml(t("corporateServices"))}</button>
-            <button data-view="app">${escapeHtml(t("downloadApp"))}</button>
-            <button data-view="pricing">${escapeHtml(t("upgrade"))}</button>
-            <button data-view="content">${escapeHtml(t("contentAdmin"))}</button>
+          <nav class="main-nav ${state.mobileMenuOpen ? "open" : ""}" aria-label="Website navigation">
+            ${navItems.map(([view, label]) => `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${escapeHtml(label)}</button>`).join("")}
           </nav>
           <div class="nav-actions">
-            <span class="tag">Tiếng Việt</span>
-            <button class="btn ghost" data-view="account">${escapeHtml(t("profile"))}</button>
-            <button class="btn ghost" data-view="auth">${escapeHtml(t("login"))}</button>
-            <span class="tag ${state.plan === "Free" ? "" : "ok"}">${escapeHtml(state.plan)}</span>
+            <button class="theme-toggle" data-action="toggle-theme" aria-label="Toggle dark mode" title="Chuyển giao diện sáng/tối">
+              ${state.theme === "dark" ? "☀" : "☾"}
+            </button>
+            <span class="tag plan-tag ${state.plan === "Free" ? "" : "ok"}">${escapeHtml(state.plan)}</span>
+            <button class="btn ghost sm" data-view="account">${escapeHtml(t("profile"))}</button>
+            <button class="btn primary sm" data-view="auth">${escapeHtml(t("login"))}</button>
+            <button class="menu-toggle" data-action="toggle-menu" aria-label="Menu">☰</button>
           </div>
         </div>
       </header>
@@ -416,8 +455,16 @@
       <footer class="site-footer">
         <div class="wrap footer-grid">
           <div>
-            <h3>${escapeHtml(data.brand.appName)}</h3>
+            <div class="flex items-center gap-2 mb-3">
+              <span class="brand-mark" style="width:32px;height:32px;font-size:18px">学</span>
+              <h3 style="margin:0">${escapeHtml(data.brand.appName)}</h3>
+            </div>
             <p class="muted">Nền tảng luyện thi HSK dùng nội dung gốc/tự cấp phép. Tên thương hiệu, pháp lý, hình ảnh, âm thanh và ngân hàng đề không sao chép từ SuperTest/HSKOnline.</p>
+            <div class="flex gap-2 mt-4">
+              <span class="tag ok">PWA Ready</span>
+              <span class="tag">HSK 1-9</span>
+              <span class="tag vip">AI Powered</span>
+            </div>
           </div>
           <div>
             <h3>${escapeHtml(t("aboutHsk"))}</h3>
@@ -467,6 +514,13 @@
       ["Dịch vụ doanh nghiệp", "B2B", "Lớp học, bài giao, dashboard giáo viên, quản lý chỗ học và báo cáo."],
     ];
 
+    const statsCards = [
+      ["readiness", `${current.readiness}%`, t("readiness"), "📊"],
+      ["accuracy", `${accuracy}%`, t("accuracy"), "🎯"],
+      ["dueReviews", `${dueCount}`, t("dueReviews"), "📝"],
+      ["totalAnswer", `${answered}`, t("totalAnswer"), "✍"],
+    ];
+
     return `
       <section class="hero">
         <div class="wrap hero-grid">
@@ -475,8 +529,8 @@
             <h1>${escapeHtml(t("appTitle"))}</h1>
             <p>${escapeHtml(t("appSubtitle"))}</p>
             <div class="hero-actions">
-              <button class="btn primary" data-view="practice">${escapeHtml(t("start"))}</button>
-              <button class="btn ghost" data-view="mock">${escapeHtml(t("mockTests"))}</button>
+              <button class="btn primary lg" data-view="practice">${escapeHtml(t("start"))}</button>
+              <button class="btn ghost lg" data-view="mock">${escapeHtml(t("mockTests"))}</button>
               <button class="btn ghost" data-view="app">${escapeHtml(t("downloadApp"))}</button>
             </div>
           </div>
@@ -496,15 +550,30 @@
         </div>
       </section>
       <div class="wrap homepage">
-        <section class="grid stats-grid">
-          ${[
-            [t("target"), current.name, `${current.words} từ mục tiêu`],
-            [t("readiness"), `${current.readiness}%`, "Ước tính từ bài đã làm"],
-            [t("accuracy"), `${accuracy}%`, `${answered} tín hiệu học tập`],
-            [t("dueReviews"), dueCount, "SRS + câu làm sai"],
-          ]
-            .map(([label, value, hint]) => `<article class="card"><p class="muted">${escapeHtml(label)}</p><h2>${escapeHtml(value)}</h2><p class="muted">${escapeHtml(hint)}</p></article>`)
-            .join("")}
+        <div class="grid stats-grid stagger">
+          ${
+            [
+              [t("target"), current.name, `${current.words} từ mục tiêu`, "🎯"],
+              [t("readiness"), `${current.readiness}%`, "ước tính từ bài đã làm", "📊"],
+              [t("accuracy"), `${accuracy}%`, `${answered} tín hiệu học tập`, "✍"],
+              [t("dueReviews"), dueCount, "SRS + câu làm sai", "📝"],
+            ]
+              .map(([label, value, hint, icon]) => `<article class="card hover"><div class="flex items-center gap-3 mb-2"><span style="font-size:22px">${icon}</span><strong style="font-size:26px;font-weight:900;color:var(--primary)">${escapeHtml(value)}</strong></div><span class="muted" style="font-weight:600">${escapeHtml(label)}</span><p class="muted text-sm mt-1">${escapeHtml(hint)}</p></article>`)
+              .join("")
+          }
+        </div>
+        <section class="feature-band">
+          <div class="split mb-4">
+            <div>
+              <p class="eyebrow">Tiến độ tuần</p>
+              <h2>Luyện tập 7 ngày qua</h2>
+              <p class="muted">Số phút học mỗi ngày và xu hướng cải thiện.</p>
+            </div>
+            <span class="tag ok">+12% so với tuần trước</span>
+          </div>
+          <div class="chart-bars" style="margin-bottom:28px">
+            ${[40, 65, 52, 78, 90, 72, 85].map((h, i) => `<div class="chart-bar ${i === 6 ? "gold" : ""}" style="height:${h}%"><span class="chart-bar-label">${["T2","T3","T4","T5","T6","T7","CN"][i]}</span></div>`).join("")}
+          </div>
         </section>
         <section class="learner-command">
           <article class="command-main">
@@ -986,6 +1055,7 @@
     const answered = Object.keys(state.mockAnswers).length;
     const minutes = String(Math.floor(state.mockSeconds / 60)).padStart(2, "0");
     const seconds = String(state.mockSeconds % 60).padStart(2, "0");
+    const timerClass = state.mockSeconds < 300 ? "danger" : state.mockSeconds < 600 ? "warning" : "";
     const score = getMockScore();
     const isAdvanced = state.level >= 7;
     const sets = data.mockSets
@@ -1030,7 +1100,7 @@
                 <h2>${escapeHtml(t("mockExamConsole"))}</h2>
                 <p class="muted">Tự lưu bài làm, phiếu trả lời, nộp bài, báo cáo điểm và tạo lịch ôn sau thi.</p>
               </div>
-              <span class="tag">${minutes}:${seconds}</span>
+              <span class="mock-timer ${timerClass}">⏱ ${minutes}:${seconds}</span>
             </div>
             <div class="card">
               <h3>Câu ${state.activeMockQuestion}: ${escapeHtml(active.prompt)}</h3>
@@ -1143,32 +1213,55 @@
 
   function renderVocab() {
     const items = data.vocab.filter((item) => item.level <= state.level);
+    const dueCount = vocabDueCount();
     return `
       <section class="panel">
         <div class="split">
           <div>
+            <p class="eyebrow">Spaced Repetition System</p>
             <h2>Ôn từ vựng SRS</h2>
-            <p class="muted">Từ vựng mẫu có pinyin, nghĩa tiếng Việt, ví dụ và chấm mức nhớ cục bộ.</p>
+            <p class="muted">Flashcard lật mặt, pinyin, nghĩa tiếng Việt, ví dụ và chấm mức nhớ cục bộ. Nhấn thẻ để lật.</p>
           </div>
-          <button class="btn primary">Ôn thẻ đến hạn</button>
+          <div class="stack-sm">
+            ${dueCount > 0 ? `<span class="tag warning">${dueCount} thẻ đến hạn hôm nay</span>` : ""}
+            <button class="btn primary" data-action="review-due">Ôn thẻ đến hạn</button>
+          </div>
         </div>
-        <div class="grid module-grid">
+        <div class="grid module-grid stagger">
           ${items
             .map((item) => {
               const mastery = state.vocabProgress[item.hanzi] ?? item.mastery;
               const due = vocabDueLabel(item);
+              const flipped = state.flashcardFlipped[item.hanzi];
               return `
-                <article class="card">
-                  <span class="tag">HSK ${item.level}</span>
-                  <h2>${escapeHtml(item.hanzi)}</h2>
-                  <p><strong>${escapeHtml(item.pinyin)}</strong> - ${escapeHtml(item.meaning)}</p>
-                  <p class="muted">${escapeHtml(item.example || "")}</p>
-                  ${progressBar(mastery)}
-                  <p class="muted">Hạn ôn: ${escapeHtml(formatDueLabel(due))}. Độ thành thạo: ${mastery}%</p>
-                  <div class="toolbar" style="justify-content:flex-start">
-                    <button class="btn ghost" data-vocab-grade="again" data-vocab-id="${escapeHtml(item.hanzi)}">Học lại</button>
-                    <button class="btn ghost" data-vocab-grade="hard" data-vocab-id="${escapeHtml(item.hanzi)}">Khó nhớ</button>
-                    <button class="btn ghost" data-vocab-grade="known" data-vocab-id="${escapeHtml(item.hanzi)}">Đã nhớ</button>
+                <article class="card hover">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="tag">HSK ${item.level}</span>
+                    <span class="tag ${due === "today" ? "warning" : "ok"}">${escapeHtml(formatDueLabel(due))}</span>
+                  </div>
+                  <div class="flashcard ${flipped ? "flipped" : ""}" data-vocab-flip="${escapeHtml(item.hanzi)}">
+                    <div class="flashcard-inner">
+                      <div class="flashcard-front">
+                        <div class="text-center">
+                          <h2 class="cn" style="font-size:32px;font-weight:700;margin:0">${escapeHtml(item.hanzi)}</h2>
+                          <p class="muted text-sm mt-2">Nhấn để lật thẻ</p>
+                        </div>
+                      </div>
+                      <div class="flashcard-back">
+                        <div class="text-center">
+                          <p><strong>${escapeHtml(item.pinyin)}</strong></p>
+                          <p class="muted text-sm mt-1">${escapeHtml(item.meaning)}</p>
+                          ${item.example ? `<p class="muted text-xs mt-2 cn">${escapeHtml(item.example)}</p>` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3">${progressBar(mastery)}</div>
+                  <p class="muted text-xs mt-2">Độ thành thạo: ${mastery}%</p>
+                  <div class="toolbar" style="justify-content:flex-start;margin-top:10px">
+                    <button class="btn ghost sm" data-vocab-grade="again" data-vocab-id="${escapeHtml(item.hanzi)}">↻ Học lại</button>
+                    <button class="btn ghost sm" data-vocab-grade="hard" data-vocab-id="${escapeHtml(item.hanzi)}">! Khó</button>
+                    <button class="btn ghost sm" data-vocab-grade="known" data-vocab-id="${escapeHtml(item.hanzi)}">✓ Đã nhớ</button>
                   </div>
                 </article>
               `;
@@ -2095,9 +2188,20 @@
   }
 
   function bindEvents() {
+    // Close mobile menu when clicking a nav item
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
         state.view = button.dataset.view;
+        state.mobileMenuOpen = false;
+        render();
+      });
+    });
+
+    // Flashcard flip
+    document.querySelectorAll("[data-vocab-flip]").forEach((card) => {
+      card.addEventListener("click", () => {
+        const id = card.dataset.vocabFlip;
+        state.flashcardFlipped[id] = !state.flashcardFlipped[id];
         render();
       });
     });
@@ -2166,6 +2270,7 @@
     document.querySelectorAll("[data-plan]").forEach((button) => {
       button.addEventListener("click", () => {
         state.plan = button.dataset.plan;
+        showToast(`Đã chọn gói ${button.dataset.plan}`, "info");
         render();
       });
     });
@@ -2221,6 +2326,8 @@
         const delta = grade === "known" ? 12 : grade === "hard" ? 4 : -10;
         state.vocabProgress[id] = Math.max(0, Math.min(100, current + delta));
         state.vocabDue[id] = nextVocabDue(grade, state.vocabProgress[id]);
+        const labels = { known: "Đã nhớ +12%", hard: "Khó nhớ +4%", again: "Học lại -10%" };
+        showToast(`${id}: ${labels[grade]}`, grade === "again" ? "warning" : "success");
         render();
       });
     });
@@ -2322,6 +2429,23 @@
 
   function handleAction(event) {
     const action = event.currentTarget.dataset.action;
+    if (action === "toggle-theme") {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      applyTheme();
+      showToast(state.theme === "dark" ? "Đã chuyển sang giao diện tối" : "Đã chuyển sang giao diện sáng", "info");
+    }
+    if (action === "toggle-menu") {
+      state.mobileMenuOpen = !state.mobileMenuOpen;
+    }
+    if (action === "review-due") {
+      const dueItem = data.vocab.find((item) => vocabDueLabel(item) === "today");
+      if (dueItem) {
+        state.flashcardFlipped[dueItem.hanzi] = false;
+        showToast(`Đang ôn thẻ: ${dueItem.hanzi} - ${dueItem.meaning}`, "info");
+      } else {
+        showToast("Không có thẻ nào đến hạn hôm nay!", "success");
+      }
+    }
     if (action === "locale") state.locale = event.currentTarget.value;
     if (action === "profile") state.profileOpen = true;
     if (action === "close-profile") state.profileOpen = false;
@@ -2354,7 +2478,12 @@
     }
     if (action === "save-item") {
       const question = currentQuestion();
-      if (!state.savedItems.includes(question.id)) state.savedItems.push(question.id);
+      if (!state.savedItems.includes(question.id)) {
+        state.savedItems.push(question.id);
+        showToast("Đã lưu câu hỏi vào bộ sưu tập", "success");
+      } else {
+        showToast("Câu hỏi đã có trong bộ sưu tập", "info");
+      }
     }
     if (action === "add-note") {
       const question = currentQuestion();
@@ -2363,6 +2492,7 @@
         text: `Review ${question.type}: ${question.grammar || question.section}`,
         at: new Date().toISOString(),
       });
+      showToast("Đã thêm ghi chú", "success");
     }
     if (action === "next-practice") {
       const list = questionList();
@@ -2376,6 +2506,7 @@
     if (action === "mock-submit") {
       state.mockSubmitted = true;
       state.mockStarted = false;
+      showToast("Đã nộp bài thi thử! Xem báo cáo bên dưới.", "success");
     }
     if (action === "essay-input") state.essay = event.currentTarget.value;
     if (action === "save-essay") {
@@ -2506,6 +2637,29 @@
       render();
     }
   }, 1000);
+
+  // Scroll header shadow
+  window.addEventListener("scroll", () => {
+    const header = document.getElementById("site-header");
+    if (header) {
+      if (window.scrollY > 10) header.classList.add("scrolled");
+      else header.classList.remove("scrolled");
+    }
+  }, { passive: true });
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", (event) => {
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.tagName === "SELECT") return;
+    if (event.key === "d" || event.key === "D") {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      applyTheme();
+      render();
+    }
+    if (event.key === "Escape" && state.mobileMenuOpen) {
+      state.mobileMenuOpen = false;
+      render();
+    }
+  });
 
   render();
 })();
