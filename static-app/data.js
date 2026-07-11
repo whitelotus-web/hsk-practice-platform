@@ -124,7 +124,7 @@ window.HSK_DATA = {
       localRecording: "Ghi âm cục bộ",
       rubricFeedback: "Nhận xét theo rubric",
       saveDraft: "Lưu bản nháp",
-      aiFeedback: "Nhận xét AI",
+      aiFeedback: "Nhận xét theo rubric",
     },
     en: {
       appTitle: "HSK Mastery - intelligent HSK preparation",
@@ -220,7 +220,7 @@ window.HSK_DATA = {
       localRecording: "Local recording",
       rubricFeedback: "Rubric feedback",
       saveDraft: "Save draft",
-      aiFeedback: "AI feedback",
+      aiFeedback: "Rubric feedback",
     },
   },
   skills: [
@@ -1005,7 +1005,7 @@ window.HSK_DATA = {
     {
       name: "MAX",
       price: "$19/mo",
-      features: ["HSK 7-9 Advanced", "AI sửa bài viết/dịch/nói", "Phòng luyện nói", "Lộ trình thích ứng", "Báo cáo sâu"],
+      features: ["HSK 7-9 Advanced", "Sửa bài viết/dịch/nói theo rubric", "Phòng luyện nói", "Lộ trình thích ứng", "Báo cáo sâu"],
       entitlements: ["advanced-hsk", "ai-writing", "translation", "speaking", "adaptive-plan", "advanced-reports"],
     },
     {

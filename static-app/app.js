@@ -1,22 +1,47 @@
 (function () {
   const data = window.HSK_DATA;
-  const saved = JSON.parse(localStorage.getItem("hsk-platform-state") || "{}");
+  const storageKey = "hsk-platform-state";
+  const knownViews = new Set([
+    "overview", "practice", "mock", "writing", "vocab", "repository", "exam", "schedule",
+    "regulation", "app", "tutoring", "account", "content", "pricing", "system", "corporate", "auth",
+  ]);
+
+  function readSavedState() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // Storage can be unavailable in strict privacy modes.
+      }
+      return {};
+    }
+  }
+
+  function viewFromHash() {
+    const candidate = decodeURIComponent(location.hash.replace(/^#/, ""));
+    return knownViews.has(candidate) ? candidate : "";
+  }
+
+  const saved = readSavedState();
 
   const state = {
     locale: "vi",
     level: saved.level || 1,
     skill: saved.skill || "listening",
-    view: saved.view || "overview",
+    view: viewFromHash() || (knownViews.has(saved.view) ? saved.view : "overview"),
     plan: saved.plan || "Free",
     profileOpen: false,
     selectedQuestion: saved.selectedQuestion || 0,
     selectedAnswer: saved.selectedAnswer || "",
     analysisOpen: Boolean(saved.analysisOpen),
-    notes: saved.notes || [],
-    savedItems: saved.savedItems || [],
-    wrongItems: saved.wrongItems || [],
-    vocabProgress: saved.vocabProgress || {},
-    vocabDue: saved.vocabDue || {},
+    notes: Array.isArray(saved.notes) ? saved.notes : [],
+    savedItems: Array.isArray(saved.savedItems) ? saved.savedItems : [],
+    wrongItems: Array.isArray(saved.wrongItems) ? saved.wrongItems : [],
+    vocabProgress: saved.vocabProgress && typeof saved.vocabProgress === "object" ? saved.vocabProgress : {},
+    vocabDue: saved.vocabDue && typeof saved.vocabDue === "object" ? saved.vocabDue : {},
     essay: saved.essay || "",
     essayFeedback: saved.essayFeedback || null,
     productiveDrafts: saved.productiveDrafts || {},
@@ -57,6 +82,7 @@
     flashcardFlipped: {},
     searchQuery: "",
     toasts: [],
+    activityLog: saved.activityLog && typeof saved.activityLog === "object" && !Array.isArray(saved.activityLog) ? saved.activityLog : {},
   };
 
   // Apply theme
@@ -194,47 +220,52 @@
   }
 
   function persist() {
-    localStorage.setItem(
-      "hsk-platform-state",
-      JSON.stringify({
-        locale: state.locale,
-        level: state.level,
-        skill: state.skill,
-        view: state.view,
-        plan: state.plan,
-        selectedQuestion: state.selectedQuestion,
-        selectedAnswer: state.selectedAnswer,
-        analysisOpen: state.analysisOpen,
-        notes: state.notes,
-        savedItems: state.savedItems,
-        wrongItems: state.wrongItems,
-        vocabProgress: state.vocabProgress,
-        vocabDue: state.vocabDue,
-        essay: state.essay,
-        essayFeedback: state.essayFeedback,
-        productiveDrafts: state.productiveDrafts,
-        productiveFeedback: state.productiveFeedback,
-        contentWorkflow: state.contentWorkflow,
-        contentStatusFilter: state.contentStatusFilter,
-        customContent: state.customContent,
-        customTranslations: state.customTranslations,
-        mockSubmitted: state.mockSubmitted,
-        mockSeconds: state.mockSeconds,
-        mockAnswers: state.mockAnswers,
-        activeMockQuestion: state.activeMockQuestion,
-        repoFilter: state.repoFilter,
-        repoTab: state.repoTab,
-        authTab: state.authTab,
-        authMessage: state.authMessage,
-        accountPanel: state.accountPanel,
-        accountMessage: state.accountMessage,
-        examInfoLevel: state.examInfoLevel,
-        testPlanYear: state.testPlanYear,
-        regulationTopic: state.regulationTopic,
-        tutoringMessage: state.tutoringMessage,
-        theme: state.theme,
-      }),
-    );
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          locale: state.locale,
+          level: state.level,
+          skill: state.skill,
+          view: state.view,
+          plan: state.plan,
+          selectedQuestion: state.selectedQuestion,
+          selectedAnswer: state.selectedAnswer,
+          analysisOpen: state.analysisOpen,
+          notes: state.notes,
+          savedItems: state.savedItems,
+          wrongItems: state.wrongItems,
+          vocabProgress: state.vocabProgress,
+          vocabDue: state.vocabDue,
+          essay: state.essay,
+          essayFeedback: state.essayFeedback,
+          productiveDrafts: state.productiveDrafts,
+          productiveFeedback: state.productiveFeedback,
+          contentWorkflow: state.contentWorkflow,
+          contentStatusFilter: state.contentStatusFilter,
+          customContent: state.customContent,
+          customTranslations: state.customTranslations,
+          mockSubmitted: state.mockSubmitted,
+          mockSeconds: state.mockSeconds,
+          mockAnswers: state.mockAnswers,
+          activeMockQuestion: state.activeMockQuestion,
+          repoFilter: state.repoFilter,
+          repoTab: state.repoTab,
+          authTab: state.authTab,
+          authMessage: state.authMessage,
+          accountPanel: state.accountPanel,
+          accountMessage: state.accountMessage,
+          examInfoLevel: state.examInfoLevel,
+          testPlanYear: state.testPlanYear,
+          regulationTopic: state.regulationTopic,
+          tutoringMessage: state.tutoringMessage,
+          theme: state.theme,
+          activityLog: state.activityLog,
+        }),
+      );
+    } catch (error) {
+      console.warn("Không thể lưu tiến độ trên thiết bị này.", error);
+    }
   }
 
   function level() {
@@ -303,6 +334,38 @@
       .replaceAll("'", "&#039;");
   }
 
+  function dateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function activityDays(offset = 0, count = 7) {
+    return Array.from({ length: count }, (_, index) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() - (offset + count - 1 - index));
+      const key = dateKey(date);
+      return {
+        key,
+        label: date.toLocaleDateString("vi-VN", { weekday: "short" }).replace("Th ", "T"),
+        count: Number(state.activityLog[key]) || 0,
+      };
+    });
+  }
+
+  function recordActivity(points = 1) {
+    const key = dateKey(new Date());
+    state.activityLog[key] = (Number(state.activityLog[key]) || 0) + points;
+  }
+
+  function noteText(note) {
+    if (typeof note === "string") return note;
+    if (note && typeof note === "object") return note.text || note.title || note.questionId || "Ghi chú học tập";
+    return "Ghi chú học tập";
+  }
+
   function slug(value) {
     return String(value || "")
       .toLowerCase()
@@ -323,7 +386,7 @@
     document.getElementById("app").innerHTML = `
       <div class="app">
         ${renderHeader()}
-        <main class="animate-in">
+        <main class="animate-in" id="main-content" tabindex="-1">
           ${
             state.view === "overview"
               ? renderOverview()
@@ -354,21 +417,23 @@
     return `
       <header class="site-header" id="site-header">
         <div class="wrap site-nav">
-          <button class="brand" data-view="overview" aria-label="Home">
+          <button class="brand" data-view="overview" aria-label="Trang chủ">
             <span class="brand-mark">学</span>
             <span>${escapeHtml(data.brand.appName)}</span>
           </button>
-          <nav class="main-nav ${state.mobileMenuOpen ? "open" : ""}" aria-label="Website navigation">
+          <nav class="main-nav ${state.mobileMenuOpen ? "open" : ""}" id="main-navigation" aria-label="Điều hướng chính">
             ${navItems.map(([view, label]) => `<button data-view="${view}" class="${state.view === view ? "active" : ""}">${escapeHtml(label)}</button>`).join("")}
+            <button class="mobile-nav-only" data-view="account">${escapeHtml(t("profile"))}</button>
+            <button class="mobile-nav-only" data-view="auth">${escapeHtml(t("login"))}</button>
           </nav>
           <div class="nav-actions">
-            <button class="theme-toggle" data-action="toggle-theme" aria-label="Toggle dark mode" title="Chuyển giao diện sáng/tối">
+            <button class="theme-toggle" data-action="toggle-theme" aria-label="${state.theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}" title="Chuyển giao diện sáng/tối">
               ${state.theme === "dark" ? "☀" : "☾"}
             </button>
             <span class="tag plan-tag ${state.plan === "Free" ? "" : "ok"}">${escapeHtml(state.plan)}</span>
             <button class="btn ghost sm" data-view="account">${escapeHtml(t("profile"))}</button>
             <button class="btn primary sm" data-view="auth">${escapeHtml(t("login"))}</button>
-            <button class="menu-toggle" data-action="toggle-menu" aria-label="Menu">☰</button>
+            <button class="menu-toggle" data-action="toggle-menu" aria-label="${state.mobileMenuOpen ? "Đóng menu" : "Mở menu"}" aria-controls="main-navigation" aria-expanded="${state.mobileMenuOpen}">☰</button>
           </div>
         </div>
       </header>
@@ -502,11 +567,11 @@
     const correctMock = getMockScore().correct;
     const accuracy = answered ? Math.round((correctMock / Math.max(1, Object.keys(state.mockAnswers).length)) * 100) : 0;
     const modules = [
-      ["Chẩn đoán AI", "12 phút", "Xác định trình độ, mục tiêu thi, kỹ năng yếu và ngày thi dự kiến."],
+      ["Chẩn đoán đầu vào", "12 phút", "Tổng hợp trình độ, mục tiêu thi, kỹ năng yếu và ngày thi dự kiến."],
       ["Luyện thông minh", "5-20 câu", "Trộn câu theo câu sai, độ tự tin thấp, kỹ năng yếu và lịch ôn."],
       ["Thi thử", "HSK 1-9", "Thi thử có bấm giờ, tự lưu, rà câu chưa làm và báo cáo điểm."],
       ["Ôn từ vựng SRS", `${current.words} từ`, "Flashcard, ví dụ, pinyin, âm thanh, độ thành thạo và lịch ôn."],
-      ["Sửa bài viết", "HSK 3-9", "Trình soạn bài, rubric, phản hồi AI và tín chỉ giáo viên sửa bài."],
+      ["Sửa bài viết", "HSK 3-9", "Trình soạn bài, nhận xét rubric tự động và hàng đợi giáo viên sửa bài."],
       ["HSK 7-9 nâng cao", "210 phút", "Luyện riêng Nghe, Đọc, Viết, Dịch, Nói và đề Advanced phân loại 7/8/9."],
       ["Bài luyện của tôi", "Cá nhân", "Câu sai, câu đã lưu, ghi chú, bài viết và lịch ôn lại."],
       ["Cẩm nang kỳ thi HSK", "2026", "Giới thiệu kỳ thi, lịch thi, quy định thi và quy trình kiểm chứng nguồn chính thức."],
@@ -515,17 +580,27 @@
     ];
 
     const statsCards = [
-      ["readiness", `${current.readiness}%`, t("readiness"), "📊"],
-      ["accuracy", `${accuracy}%`, t("accuracy"), "🎯"],
-      ["dueReviews", `${dueCount}`, t("dueReviews"), "📝"],
-      ["totalAnswer", `${answered}`, t("totalAnswer"), "✍"],
+      [t("target"), current.name, `${current.words} từ mục tiêu`, "🎯"],
+      [t("readiness"), `${current.readiness}%`, "Ước tính từ bài đã làm", "📊"],
+      [t("accuracy"), `${accuracy}%`, `${answered} tín hiệu học tập`, "✍"],
+      [t("dueReviews"), dueCount, "SRS + câu làm sai", "📝"],
     ];
+    const weeklyActivity = activityDays();
+    const previousActivity = activityDays(7);
+    const weeklyTotal = weeklyActivity.reduce((sum, item) => sum + item.count, 0);
+    const previousTotal = previousActivity.reduce((sum, item) => sum + item.count, 0);
+    const activityMax = Math.max(1, ...weeklyActivity.map((item) => item.count));
+    const trendLabel = previousTotal
+      ? `${weeklyTotal >= previousTotal ? "+" : ""}${Math.round(((weeklyTotal - previousTotal) / previousTotal) * 100)}% so với tuần trước`
+      : weeklyTotal
+        ? "Bắt đầu ghi nhận tuần học"
+        : "Chưa có hoạt động tuần này";
 
     return `
       <section class="hero">
         <div class="wrap hero-grid">
           <div class="hero-copy">
-            <p class="eyebrow">Dữ liệu lớn + học thích ứng</p>
+            <p class="eyebrow">HSK 1-9 + học theo tiến độ</p>
             <h1>${escapeHtml(t("appTitle"))}</h1>
             <p>${escapeHtml(t("appSubtitle"))}</p>
             <div class="hero-actions">
@@ -544,7 +619,7 @@
               <span></span><span></span><span></span>
             </div>
             <div class="mini-options">
-              <button>A</button><button>B</button><button>C</button><button>D</button>
+              <span>A</span><span>B</span><span>C</span><span>D</span>
             </div>
           </div>
         </div>
@@ -552,12 +627,7 @@
       <div class="wrap homepage">
         <div class="grid stats-grid stagger">
           ${
-            [
-              [t("target"), current.name, `${current.words} từ mục tiêu`, "🎯"],
-              [t("readiness"), `${current.readiness}%`, "ước tính từ bài đã làm", "📊"],
-              [t("accuracy"), `${accuracy}%`, `${answered} tín hiệu học tập`, "✍"],
-              [t("dueReviews"), dueCount, "SRS + câu làm sai", "📝"],
-            ]
+            statsCards
               .map(([label, value, hint, icon]) => `<article class="card hover"><div class="flex items-center gap-3 mb-2"><span style="font-size:22px">${icon}</span><strong style="font-size:26px;font-weight:900;color:var(--primary)">${escapeHtml(value)}</strong></div><span class="muted" style="font-weight:600">${escapeHtml(label)}</span><p class="muted text-sm mt-1">${escapeHtml(hint)}</p></article>`)
               .join("")
           }
@@ -567,12 +637,15 @@
             <div>
               <p class="eyebrow">Tiến độ tuần</p>
               <h2>Luyện tập 7 ngày qua</h2>
-              <p class="muted">Số phút học mỗi ngày và xu hướng cải thiện.</p>
+              <p class="muted">Số lượt tương tác học tập được ghi nhận trên thiết bị này.</p>
             </div>
-            <span class="tag ok">+12% so với tuần trước</span>
+            <span class="tag ${weeklyTotal ? "ok" : ""}">${escapeHtml(trendLabel)}</span>
           </div>
           <div class="chart-bars" style="margin-bottom:28px">
-            ${[40, 65, 52, 78, 90, 72, 85].map((h, i) => `<div class="chart-bar ${i === 6 ? "gold" : ""}" style="height:${h}%"><span class="chart-bar-label">${["T2","T3","T4","T5","T6","T7","CN"][i]}</span></div>`).join("")}
+            ${weeklyActivity.map((item, index) => {
+              const height = item.count ? Math.max(12, Math.round((item.count / activityMax) * 100)) : 4;
+              return `<div class="chart-bar ${index === weeklyActivity.length - 1 ? "gold" : ""}" style="height:${height}%" title="${item.count} lượt học"><span class="chart-bar-label">${escapeHtml(item.label)}</span></div>`;
+            }).join("")}
           </div>
         </section>
         <section class="learner-command">
@@ -619,14 +692,19 @@
         <section class="feature-band">
           <div class="split">
             <div>
-              <h2>${escapeHtml(t("learnerChoice"))}</h2>
-              <p class="muted">Câu chuyện học viên mẫu, chỉ dùng để giữ cấu trúc. Khi ra mắt cần dùng phản hồi thật có đồng ý sử dụng.</p>
+              <p class="eyebrow">Minh bạch sản phẩm</p>
+              <h2>Những gì người học có thể kiểm chứng</h2>
+              <p class="muted">Không hiển thị lời chứng thực hoặc điểm số giả. Kết quả công khai chỉ dùng dữ liệu thật có sự đồng ý của học viên.</p>
             </div>
             <button class="btn ghost" data-view="tutoring">${escapeHtml(t("oneOnOneTutoring"))}</button>
           </div>
           <div class="grid module-grid">
-            ${data.testimonials
-              .map((item) => `<article class="feature"><span class="tag">${escapeHtml(item.level)} ${escapeHtml(item.score)}</span><h3>${escapeHtml(item.name)}</h3><p class="muted">${escapeHtml(item.text)}</p></article>`)
+            ${[
+              ["Tiến độ thật", "Trên thiết bị", "Số lượt học, câu sai, từ đến hạn và bài đã nộp được tính từ thao tác thực tế."],
+              ["Nguồn nội dung", "Gốc/cấp phép", "Câu hỏi, audio và lời giải phải do đội ngũ biên soạn hoặc có quyền sử dụng."],
+              ["Báo cáo sau thi", "Theo kỹ năng", "Điểm, độ chính xác và kế hoạch ôn được tính từ câu trả lời của chính người học."],
+            ]
+              .map(([name, metric, desc]) => `<article class="feature"><span class="tag">${escapeHtml(metric)}</span><h3>${escapeHtml(name)}</h3><p class="muted">${escapeHtml(desc)}</p></article>`)
               .join("")}
           </div>
         </section>
@@ -718,7 +796,7 @@
           </section>
 
           <section class="smart-card">
-            <div class="smart-orb">AI</div>
+            <div class="smart-orb">SRS</div>
             <div>
               <p class="eyebrow">${escapeHtml(t("smartQuiz"))}</p>
               <h3>Luyện trộn thích ứng</h3>
@@ -836,7 +914,7 @@
             <div>
               <p class="eyebrow">${escapeHtml(t("advancedHsk"))}</p>
               <h2>${escapeHtml(current.name)} - ${escapeHtml(skillName)}</h2>
-              <p class="muted">Khu luyện ${escapeHtml(skillName.toLowerCase())} cho HSK nâng cao: đề bài, bản nháp, rubric, nhận xét AI và hàng đợi giáo viên. Nội dung hiện tại là dữ liệu gốc để dựng logic, không sao chép đề thật.</p>
+              <p class="muted">Khu luyện ${escapeHtml(skillName.toLowerCase())} cho HSK nâng cao: đề bài, bản nháp, nhận xét rubric tự động và hàng đợi giáo viên. Nội dung hiện tại là dữ liệu gốc để dựng logic, không sao chép đề thật.</p>
             </div>
             <div class="course-summary">
               <strong>${aggregateProgress}%</strong>
@@ -891,7 +969,7 @@
               <strong>${chars}</strong>
               <span>ký tự bản nháp</span>
             </div>
-            <button class="btn primary" data-action="productive-feedback">${escapeHtml(t("aiFeedback"))}</button>
+            <button class="btn primary" data-action="productive-feedback">${escapeHtml(t("rubricFeedback"))}</button>
           </section>
         </div>
 
@@ -935,7 +1013,7 @@
               <p class="muted">${chars} ký tự</p>
               <div class="toolbar">
                 <button class="btn ghost" data-action="save-productive">${escapeHtml(t("saveDraft"))}</button>
-                <button class="btn primary" data-action="productive-feedback">${escapeHtml(t("aiFeedback"))}</button>
+                <button class="btn primary" data-action="productive-feedback">${escapeHtml(t("rubricFeedback"))}</button>
                 <button class="btn ghost" data-action="next-practice">${escapeHtml(t("next"))}</button>
               </div>
             </div>
@@ -1193,7 +1271,7 @@
             <p class="muted">${chars} ký tự</p>
             <div class="toolbar">
               <button class="btn ghost" data-action="save-essay" ${disabled ? "disabled" : ""}>${escapeHtml(t("save"))}</button>
-              <button class="btn primary" data-action="ai-feedback" ${disabled ? "disabled" : ""}>Nhận xét AI</button>
+              <button class="btn primary" data-action="ai-feedback" ${disabled ? "disabled" : ""}>Nhận xét theo rubric</button>
             </div>
           </div>
         </div>
@@ -1204,7 +1282,7 @@
               ? Object.entries(state.essayFeedback)
                   .map(([key, value]) => `<article class="card"><strong>${escapeHtml(key)}</strong><p class="muted">${escapeHtml(value)}</p></article>`)
                   .join("")
-              : '<p class="muted">AI sẽ đánh giá mức hoàn thành đề, ngữ pháp, từ vựng, độ mạch lạc, độ chính xác chữ Hán và thời gian làm bài. Khi triển khai thật, phần này gọi dịch vụ AI.</p>'
+              : '<p class="muted">Bộ tiêu chí hiện tại đánh giá độ dài, từ nối, ngữ pháp, từ vựng và mạch lạc ngay trên thiết bị. Chấm ngữ nghĩa bằng AI/giáo viên sẽ chỉ bật sau khi có backend thật.</p>'
           }
         </aside>
       </section>
@@ -1313,7 +1391,7 @@
             ? {
                 head: ["STT", "Nội dung ghi chú", "Nguồn", "Trạng thái"],
                 empty: "Chưa có ghi chú. Khi bấm Thêm ghi chú, nội dung sẽ nằm ở đây.",
-                rows: state.notes.map((note, index) => [index + 1, note, `HSK ${state.level}`, "Đang học"]),
+                rows: state.notes.map((note, index) => [index + 1, noteText(note), `HSK ${state.level}`, "Đang học"]),
               }
             : state.repoTab === "productive"
               ? {
@@ -2087,7 +2165,7 @@
     return `
       <section class="panel">
         <h2>Mô hình gói học và quyền sử dụng</h2>
-        <p class="muted">Quyền sử dụng được chia theo tính năng: phần luyện tập, luyện thông minh, bộ đề thi thử, AI sửa viết, luyện nói, lớp B2B và báo cáo admin.</p>
+        <p class="muted">Quyền sử dụng được chia theo tính năng: phần luyện tập, luyện thông minh, bộ đề thi thử, sửa viết theo rubric, luyện nói, lớp B2B và báo cáo admin.</p>
         <div class="grid module-grid">
           ${data.plans
             .map(
@@ -2191,9 +2269,13 @@
     // Close mobile menu when clicking a nav item
     document.querySelectorAll("[data-view]").forEach((button) => {
       button.addEventListener("click", () => {
-        state.view = button.dataset.view;
+        const nextView = button.dataset.view;
+        if (!knownViews.has(nextView)) return;
+        state.view = nextView;
         state.mobileMenuOpen = false;
+        if (location.hash !== `#${nextView}`) history.pushState({ view: nextView }, "", `#${nextView}`);
         render();
+        document.getElementById("main-content")?.focus({ preventScroll: true });
       });
     });
 
@@ -2245,6 +2327,7 @@
       button.addEventListener("click", () => {
         state.selectedAnswer = button.dataset.answer;
         state.analysisOpen = true;
+        recordActivity();
         const question = currentQuestion();
         if (state.selectedAnswer !== question.answer && !state.wrongItems.includes(question.id)) {
           state.wrongItems.push(question.id);
@@ -2256,6 +2339,7 @@
     document.querySelectorAll("[data-mock-answer]").forEach((button) => {
       button.addEventListener("click", () => {
         state.mockAnswers[state.activeMockQuestion] = button.dataset.mockAnswer;
+        recordActivity();
         render();
       });
     });
@@ -2326,6 +2410,7 @@
         const delta = grade === "known" ? 12 : grade === "hard" ? 4 : -10;
         state.vocabProgress[id] = Math.max(0, Math.min(100, current + delta));
         state.vocabDue[id] = nextVocabDue(grade, state.vocabProgress[id]);
+        recordActivity();
         const labels = { known: "Đã nhớ +12%", hard: "Khó nhớ +4%", again: "Học lại -10%" };
         showToast(`${id}: ${labels[grade]}`, grade === "again" ? "warning" : "success");
         render();
@@ -2506,11 +2591,13 @@
     if (action === "mock-submit") {
       state.mockSubmitted = true;
       state.mockStarted = false;
+      recordActivity(3);
       showToast("Đã nộp bài thi thử! Xem báo cáo bên dưới.", "success");
     }
     if (action === "essay-input") state.essay = event.currentTarget.value;
     if (action === "save-essay") {
       state.notes.push({ questionId: "essay", text: "Đã lưu bản nháp bài viết", at: new Date().toISOString() });
+      recordActivity(2);
     }
     if (action === "productive-input") {
       const question = currentQuestion();
@@ -2519,6 +2606,7 @@
     if (action === "save-productive") {
       const question = currentQuestion();
       state.notes.push({ questionId: question.id, text: `Đã lưu bản nháp ${t(question.skill, question.skill)}`, at: new Date().toISOString() });
+      recordActivity(2);
     }
     if (action === "productive-feedback") {
       const question = currentQuestion();
@@ -2623,7 +2711,7 @@
       }
     }
     if (action === "reset-progress") {
-      localStorage.removeItem("hsk-platform-state");
+      localStorage.removeItem(storageKey);
       location.reload();
       return;
     }
@@ -2646,6 +2734,15 @@
       else header.classList.remove("scrolled");
     }
   }, { passive: true });
+
+  window.addEventListener("popstate", () => {
+    const nextView = viewFromHash() || "overview";
+    if (nextView !== state.view) {
+      state.view = nextView;
+      state.mobileMenuOpen = false;
+      render();
+    }
+  });
 
   // Keyboard shortcuts
   document.addEventListener("keydown", (event) => {

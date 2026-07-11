@@ -13,6 +13,8 @@ experience.
 - `docs/supertest-audit.md`: observed product model and upgrade notes.
 - `docs/hskonline-reaudit-2026-06-29.md`: latest public HSKOnline/SuperTest
   re-audit and upgrade plan.
+- `docs/platform-audit-2026-07-11.md`: current end-to-end quality audit,
+  completed fixes and production upgrade priorities.
 - `docs/implementation-plan.md`: phased implementation plan.
 - `docs/backend.md`: backend setup, environment variables, API surface and
   super-admin notes.

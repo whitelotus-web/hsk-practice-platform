@@ -37,11 +37,22 @@ const indexHtml = readText("static-app", "index.html");
 const serviceWorker = readText("static-app", "sw.js");
 const appJs = readText("static-app", "app.js");
 const stylesCss = readText("static-app", "styles.css");
-const manifest = JSON.parse(readText("static-app", "manifest.webmanifest"));
+const manifestMatch = indexHtml.match(/rel="manifest"\s+href="\.\/([^"?#]+)(?:\?[^"#]*)?"/i);
+const manifestRelativePath = manifestMatch?.[1] || "manifest.webmanifest";
+const manifestExists = fs.existsSync(filePath("static-app", manifestRelativePath));
+const manifest = manifestExists ? JSON.parse(readText("static-app", manifestRelativePath)) : {};
 const legalTodo = readText("docs", "legal-content-todo.md");
 const data = getData();
 
 check(Boolean(data), "static data exports window.HSK_DATA");
+check(Boolean(manifestMatch), "index references a web app manifest");
+check(manifestExists, `manifest asset exists: ${manifestRelativePath}`);
+check(serviceWorker.includes(`./${manifestRelativePath}`), "service worker caches the referenced manifest");
+
+const localAssetRefs = [...indexHtml.matchAll(/(?:href|src)="\.\/([^"?#]+)(?:\?[^"#]*)?"/gi)].map((match) => match[1]);
+for (const ref of localAssetRefs) {
+  check(fs.existsSync(filePath("static-app", ref)), `index asset exists: ${ref}`);
+}
 
 const versionedAssetRefs = ["styles.css", "data.js", "app.js"].map((asset) => {
   const match = indexHtml.match(new RegExp(`\\./${asset}\\?v=([0-9a-z]+)`, "i"));
@@ -58,6 +69,9 @@ check(fs.existsSync(filePath("static-app", "offline.html")), "offline fallback e
 check(fs.existsSync(filePath("static-app", "icons", "icon.svg")), "PWA icon exists");
 check(appJs.includes("data-level-select"), "level selector uses compact select control");
 check(stylesCss.includes(".level-select"), "level selector has dedicated responsive styles");
+check(indexHtml.includes('href="#main-content"'), "keyboard skip link is present");
+check(stylesCss.includes("prefers-reduced-motion"), "reduced-motion preference is supported");
+check(appJs.includes("viewFromHash()"), "PWA shortcuts and deep links map to app views");
 
 check(manifest.name === data.brand.appName, "manifest name matches product data");
 check(manifest.start_url === "./index.html", "manifest has static start_url");
